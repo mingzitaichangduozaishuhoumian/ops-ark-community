@@ -1,0 +1,64 @@
+name: 缺陷反馈
+description: 报告可在合成样本或隔离环境复现的问题
+title: "[缺陷] "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        这里的内容公开可见。请用合成样本或隔离环境说明问题，省略真实目标、IP、域名、URL、日志、截图、附件、配置、业务数据和凭据。怀疑有漏洞时，请到本仓库的 Security 页面私密报告，操作见「私密漏洞报告指南」。
+  - type: input
+    id: version
+    attributes:
+      label: OpsArk 版本
+      description: 填发布版本、短提交号或「未知」。
+      placeholder: "例如 v0.19.0"
+    validations:
+      required: true
+  - type: dropdown
+    id: console_os
+    attributes:
+      label: 控制台运行系统
+      options:
+        - Linux
+        - Windows
+        - macOS
+        - 其他或未知
+    validations:
+      required: true
+  - type: dropdown
+    id: scenario
+    attributes:
+      label: 发生在哪个场景
+      options:
+        - 安装 Python、uv 或项目依赖
+        - 启动或主机接入
+        - 网站与 Nginx
+        - 磁盘空间
+        - 容器与 Docker Compose
+        - 报告、复验或导出
+        - 其他
+    validations:
+      required: true
+  - type: input
+    id: reproduce
+    attributes:
+      label: 最短复现步骤
+      description: 用一句话写安装命令、合成样本或隔离环境中的操作。
+      placeholder: 从新目录运行 uv sync --locked --no-dev --python 3.13
+    validations:
+      required: true
+  - type: input
+    id: outcome
+    attributes:
+      label: 实际结果和预期结果
+      description: 用自己的话概括安装或界面的结果，保留终端和日志原文在本地。
+      placeholder: 下载依赖时超时，预期同步完成后能启动控制台
+    validations:
+      required: true
+  - type: checkboxes
+    id: privacy
+    attributes:
+      label: 公开提交确认
+      options:
+        - label: 我已检查标题和内容，确认未包含真实目标、IP、域名、URL、日志、截图、附件、配置、业务数据或任何凭据。
+          required: true

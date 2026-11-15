@@ -1,0 +1,40 @@
+{
+  "title": "回放：少量失败与独立来源的成功事件",
+  "scenario": "ssh_security",
+  "host": {
+    "id": "demo-web-01",
+    "name": "web-demo-01",
+    "address": "192.0.2.10",
+    "port": 22,
+    "username": "opsark-readonly",
+    "site_domain": "shop.example.com",
+    "container_name": "api",
+    "expected_upstream_port": 8081,
+    "source": "replay",
+    "health_checks": [
+      {
+        "id": "shop",
+        "domain": "shop.example.com",
+        "port": 80,
+        "path": "/healthz",
+        "expected_status": 200,
+        "expected_body": "ok",
+        "read_only_confirmed": true
+      }
+    ]
+  },
+  "checks": [
+    {
+      "name": "os_release",
+      "stdout": "NAME=\"Ubuntu\"\nVERSION_ID=\"24.04\"\nID=ubuntu\n"
+    },
+    {
+      "name": "ssh_auth",
+      "stdout": "Oct 26 14:30:01 web-demo-01 sshd[1001]: Failed password for backup from 192.0.2.55 port 40001 ssh2\nOct 26 14:30:02 web-demo-01 sshd[1002]: Failed password for backup from 192.0.2.55 port 40002 ssh2\nOct 26 14:31:00 web-demo-01 sshd[2000]: Accepted publickey for ops from 203.0.113.10 port 50001 ssh2\n"
+    },
+    {
+      "name": "http_shop",
+      "stdout": "{\"status\":\"ok\"}\nOPSARK_HTTP_STATUS:200\n"
+    }
+  ]
+}

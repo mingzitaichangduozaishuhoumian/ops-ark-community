@@ -1,0 +1,40 @@
+{
+  "title": "回放：同源 SSH 失败事件聚集",
+  "scenario": "ssh_security",
+  "host": {
+    "id": "demo-web-01",
+    "name": "web-demo-01",
+    "address": "192.0.2.10",
+    "port": 22,
+    "username": "opsark-readonly",
+    "site_domain": "shop.example.com",
+    "container_name": "api",
+    "expected_upstream_port": 8081,
+    "source": "replay",
+    "health_checks": [
+      {
+        "id": "shop",
+        "domain": "shop.example.com",
+        "port": 80,
+        "path": "/healthz",
+        "expected_status": 200,
+        "expected_body": "ok",
+        "read_only_confirmed": true
+      }
+    ]
+  },
+  "checks": [
+    {
+      "name": "os_release",
+      "stdout": "NAME=\"Ubuntu\"\nVERSION_ID=\"24.04\"\nID=ubuntu\n"
+    },
+    {
+      "name": "ssh_auth",
+      "stdout": "Oct 26 14:30:00 web-demo-01 sshd[1000]: Failed password for invalid user deploy from 203.0.113.77 port 40000 ssh2\nOct 26 14:30:01 web-demo-01 sshd[1001]: Failed password for invalid user deploy from 203.0.113.77 port 40001 ssh2\nOct 26 14:30:02 web-demo-01 sshd[1002]: Failed password for invalid user deploy from 203.0.113.77 port 40002 ssh2\nOct 26 14:30:03 web-demo-01 sshd[1003]: Failed password for invalid user deploy from 203.0.113.77 port 40003 ssh2\nOct 26 14:30:04 web-demo-01 sshd[1004]: Failed password for invalid user deploy from 203.0.113.77 port 40004 ssh2\nOct 26 14:30:05 web-demo-01 sshd[1005]: Failed password for invalid user deploy from 203.0.113.77 port 40005 ssh2\nOct 26 14:30:06 web-demo-01 sshd[1006]: Failed password for invalid user deploy from 203.0.113.77 port 40006 ssh2\nOct 26 14:30:07 web-demo-01 sshd[1007]: Failed password for invalid user deploy from 203.0.113.77 port 40007 ssh2\nOct 26 14:30:08 web-demo-01 sshd[1008]: Failed password for invalid user deploy from 203.0.113.77 port 40008 ssh2\nOct 26 14:30:09 web-demo-01 sshd[1009]: Failed password for invalid user deploy from 203.0.113.77 port 40009 ssh2\nOct 26 14:30:10 web-demo-01 sshd[1010]: Failed password for invalid user deploy from 203.0.113.77 port 40010 ssh2\nOct 26 14:30:11 web-demo-01 sshd[1011]: Failed password for invalid user deploy from 203.0.113.77 port 40011 ssh2\nOct 26 14:30:12 web-demo-01 sshd[1012]: Failed password for invalid user deploy from 203.0.113.77 port 40012 ssh2\nOct 26 14:30:13 web-demo-01 sshd[1013]: Failed password for invalid user deploy from 203.0.113.77 port 40013 ssh2\nOct 26 14:30:14 web-demo-01 sshd[1014]: Failed password for invalid user deploy from 203.0.113.77 port 40014 ssh2\nOct 26 14:30:15 web-demo-01 sshd[1015]: Failed password for invalid user deploy from 203.0.113.77 port 40015 ssh2\nOct 26 14:30:16 web-demo-01 sshd[1016]: Failed password for invalid user deploy from 203.0.113.77 port 40016 ssh2\nOct 26 14:30:17 web-demo-01 sshd[1017]: Failed password for invalid user deploy from 203.0.113.77 port 40017 ssh2\nOct 26 14:30:18 web-demo-01 sshd[1018]: Failed password for invalid user deploy from 203.0.113.77 port 40018 ssh2\nOct 26 14:30:19 web-demo-01 sshd[1019]: Failed password for invalid user deploy from 203.0.113.77 port 40019 ssh2\nOct 26 14:30:20 web-demo-01 sshd[1020]: Failed password for invalid user deploy from 203.0.113.77 port 40020 ssh2\nOct 26 14:30:21 web-demo-01 sshd[1021]: Failed password for invalid user deploy from 203.0.113.77 port 40021 ssh2\nOct 26 14:30:22 web-demo-01 sshd[1022]: Failed password for invalid user deploy from 203.0.113.77 port 40022 ssh2\nOct 26 14:30:23 web-demo-01 sshd[1023]: Failed password for invalid user deploy from 203.0.113.77 port 40023 ssh2\nOct 26 14:30:24 web-demo-01 sshd[1024]: Failed password for invalid user deploy from 203.0.113.77 port 40024 ssh2\nOct 26 14:30:25 web-demo-01 sshd[1025]: Failed password for invalid user deploy from 203.0.113.77 port 40025 ssh2\nOct 26 14:30:26 web-demo-01 sshd[1026]: Failed password for invalid user deploy from 203.0.113.77 port 40026 ssh2\nOct 26 14:30:27 web-demo-01 sshd[1027]: Failed password for invalid user deploy from 203.0.113.77 port 40027 ssh2\nOct 26 14:30:28 web-demo-01 sshd[1028]: Failed password for invalid user deploy from 203.0.113.77 port 40028 ssh2\nOct 26 14:30:29 web-demo-01 sshd[1029]: Failed password for invalid user deploy from 203.0.113.77 port 40029 ssh2\nOct 26 14:30:30 web-demo-01 sshd[1030]: Failed password for invalid user deploy from 203.0.113.77 port 40030 ssh2\nOct 26 14:30:31 web-demo-01 sshd[1031]: Failed password for invalid user deploy from 203.0.113.77 port 40031 ssh2\nOct 26 14:30:32 web-demo-01 sshd[1032]: Failed password for invalid user deploy from 203.0.113.77 port 40032 ssh2\nOct 26 14:30:33 web-demo-01 sshd[1033]: Failed password for invalid user deploy from 203.0.113.77 port 40033 ssh2\nOct 26 14:30:34 web-demo-01 sshd[1034]: Failed password for invalid user deploy from 203.0.113.77 port 40034 ssh2\nOct 26 14:30:35 web-demo-01 sshd[1035]: Failed password for invalid user deploy from 203.0.113.77 port 40035 ssh2\nOct 26 14:30:36 web-demo-01 sshd[1036]: Failed password for invalid user deploy from 203.0.113.77 port 40036 ssh2\nOct 26 14:30:37 web-demo-01 sshd[1037]: Failed password for invalid user deploy from 203.0.113.77 port 40037 ssh2\nOct 26 14:30:38 web-demo-01 sshd[1038]: Failed password for invalid user deploy from 203.0.113.77 port 40038 ssh2\nOct 26 14:30:39 web-demo-01 sshd[1039]: Failed password for invalid user deploy from 203.0.113.77 port 40039 ssh2\nOct 26 14:30:40 web-demo-01 sshd[1040]: Failed password for invalid user deploy from 203.0.113.77 port 40040 ssh2\nOct 26 14:30:41 web-demo-01 sshd[1041]: Failed password for invalid user deploy from 203.0.113.77 port 40041 ssh2\nOct 26 14:30:42 web-demo-01 sshd[1042]: Failed password for invalid user deploy from 203.0.113.77 port 40042 ssh2\nOct 26 14:30:43 web-demo-01 sshd[1043]: Failed password for invalid user deploy from 203.0.113.77 port 40043 ssh2\nOct 26 14:30:44 web-demo-01 sshd[1044]: Failed password for invalid user deploy from 203.0.113.77 port 40044 ssh2\nOct 26 14:30:45 web-demo-01 sshd[1045]: Failed password for invalid user deploy from 203.0.113.77 port 40045 ssh2\nOct 26 14:30:46 web-demo-01 sshd[1046]: Failed password for invalid user deploy from 203.0.113.77 port 40046 ssh2\nOct 26 14:30:47 web-demo-01 sshd[1047]: Failed password for invalid user deploy from 203.0.113.77 port 40047 ssh2\n"
+    },
+    {
+      "name": "http_shop",
+      "stdout": "{\"status\":\"ok\"}\nOPSARK_HTTP_STATUS:200\n"
+    }
+  ]
+}

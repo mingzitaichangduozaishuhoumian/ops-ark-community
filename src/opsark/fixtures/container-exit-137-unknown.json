@@ -1,0 +1,52 @@
+{
+  "title": "回放：退出码 137 但终止原因证据不足",
+  "scenario": "container_restart",
+  "host": {
+    "id": "demo-web-01",
+    "name": "web-demo-01",
+    "address": "192.0.2.10",
+    "port": 22,
+    "username": "opsark-readonly",
+    "site_domain": "shop.example.com",
+    "container_name": "api",
+    "expected_upstream_port": 8081,
+    "source": "replay",
+    "health_checks": [
+      {
+        "id": "shop",
+        "domain": "shop.example.com",
+        "port": 80,
+        "path": "/healthz",
+        "expected_status": 200,
+        "expected_body": "ok",
+        "read_only_confirmed": true
+      }
+    ]
+  },
+  "checks": [
+    {
+      "name": "os_release",
+      "stdout": "NAME=\"Ubuntu\"\nVERSION_ID=\"24.04\"\nID=ubuntu\n"
+    },
+    {
+      "name": "container_state",
+      "stdout": "{\"Name\": \"/api\", \"State\": {\"Status\": \"restarting\", \"ExitCode\": 137, \"OOMKilled\": null, \"FinishedAt\": \"2026-10-26T06:20:00Z\"}, \"RestartCount\": 6, \"MemoryLimit\": 536870912, \"Ports\": {\"8000/tcp\": [{\"HostIp\": \"127.0.0.1\", \"HostPort\": \"8081\"}]}, \"Image\": \"sha256:adc1928e3d361934194e7b7a1af3656db9cd028478624ba1400a2229c0268ebe\", \"ImageReference\": \"demo/api:1\"}"
+    },
+    {
+      "name": "container_logs",
+      "stdout": "2026-10-26T06:19:59Z database connection timeout\n",
+      "truncated": true
+    },
+    {
+      "name": "memory_events",
+      "stdout": "",
+      "status": "permission_denied",
+      "stderr": "journalctl: insufficient permission",
+      "exit_code": 1
+    },
+    {
+      "name": "http_shop",
+      "stdout": "{\"status\":\"ok\"}\nOPSARK_HTTP_STATUS:200\n"
+    }
+  ]
+}

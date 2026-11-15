@@ -1,0 +1,216 @@
+name: Checks
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  browser-platforms:
+    name: Browser engines
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
+        with:
+          version: "0.9.17"
+          python-version: "3.13"
+          enable-cache: true
+      - run: uv sync --locked
+      - run: uv run playwright install --with-deps chromium firefox webkit
+      - run: uv run python tests/browser_platform_smoke.py --browser chromium
+      - run: uv run python tests/browser_platform_smoke.py --browser firefox
+      - run: uv run python tests/browser_platform_smoke.py --browser webkit
+      - run: uv run python tests/browser_security_smoke.py --browser chromium
+      - run: uv run python tests/browser_security_smoke.py --browser firefox
+      - run: uv run python tests/browser_security_smoke.py --browser webkit
+      - run: uv run python tests/browser_web_security_smoke.py --browser chromium
+      - run: uv run python tests/browser_web_security_smoke.py --browser firefox
+      - run: uv run python tests/browser_web_security_smoke.py --browser webkit
+      - run: uv run python tests/browser_remediation_smoke.py --browser chromium
+      - run: uv run python tests/browser_remediation_smoke.py --browser firefox
+      - run: uv run python tests/browser_remediation_smoke.py --browser webkit
+      - run: uv run python tests/browser_vulnerability_watch_smoke.py --browser chromium
+      - run: uv run python tests/browser_vulnerability_watch_smoke.py --browser firefox
+      - run: uv run python tests/browser_vulnerability_watch_smoke.py --browser webkit
+      - run: uv run python tests/browser_automatic_smoke.py --browser chromium
+      - run: uv run python tests/browser_automatic_smoke.py --browser firefox
+      - run: uv run python tests/browser_automatic_smoke.py --browser webkit
+      - run: uv run python tests/browser_recovery_smoke.py --browser chromium
+      - run: uv run python tests/browser_recovery_smoke.py --browser firefox
+      - run: uv run python tests/browser_recovery_smoke.py --browser webkit
+      - run: uv run python tests/browser_activation_smoke.py --browser chromium
+      - run: uv run python tests/browser_activation_smoke.py --browser firefox
+      - run: uv run python tests/browser_activation_smoke.py --browser webkit
+      - run: uv run python tests/browser_activation_recovery_smoke.py --browser chromium
+      - run: uv run python tests/browser_activation_recovery_smoke.py --browser firefox
+      - run: uv run python tests/browser_activation_recovery_smoke.py --browser webkit
+      - run: uv run python tests/browser_vulnerability_ai_smoke.py --browser chromium
+      - run: uv run python tests/browser_vulnerability_ai_smoke.py --browser firefox
+      - run: uv run python tests/browser_vulnerability_ai_smoke.py --browser webkit
+      - run: uv run python tests/browser_vulnerability_ai_focus_smoke.py --browser chromium
+      - run: uv run python tests/browser_vulnerability_ai_focus_smoke.py --browser firefox
+      - run: uv run python tests/browser_vulnerability_ai_focus_smoke.py --browser webkit
+      - run: uv run python tests/browser_automatic_ai_smoke.py --browser chromium
+      - run: uv run python tests/browser_automatic_ai_smoke.py --browser firefox
+      - run: uv run python tests/browser_automatic_ai_smoke.py --browser webkit
+      - run: uv run python tests/browser_vulnerability_evidence_smoke.py --browser chromium
+      - run: uv run python tests/browser_vulnerability_evidence_smoke.py --browser firefox
+      - run: uv run python tests/browser_vulnerability_evidence_smoke.py --browser webkit
+      - name: Check Compose, Nginx and customer handoff in all engines
+        shell: bash
+        run: |
+          for browser in chromium firefox webkit; do
+            OPSARK_TEST_BROWSER="$browser" uv run --locked pytest -q \
+              tests/test_browser_compose_generation.py tests/test_browser_compose_volumes.py \
+              tests/test_browser_nginx_actions.py tests/test_browser_nginx_dependencies.py \
+              tests/test_browser_action_handoff.py
+          done
+  controller-platforms:
+    name: Controller / ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, windows-2025, macos-15]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
+        with:
+          version: "0.9.17"
+          python-version: "3.13"
+          enable-cache: true
+      - run: uv sync --locked
+      - name: Record actual controller platform
+        run: uv run python -c "import platform; print(platform.system(), platform.machine(), platform.python_version())"
+      - name: Install Chromium for the controller test suite (Linux)
+        if: runner.os == 'Linux'
+        run: uv run --locked playwright install --with-deps chromium
+      - name: Install Chromium for the controller test suite (Windows and macOS)
+        if: runner.os == 'Windows' || runner.os == 'macOS'
+        run: uv run --locked playwright install chromium
+      - name: Prepare pinned native age tools for fake-data backup acceptance
+        if: runner.os == 'Linux' || runner.os == 'Windows'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: uv run python -I tests/prepare_sealed_tools.py --ci-home
+      - name: Diagnose Linux controller and deployed Root lock runtimes
+        if: runner.os == 'Linux'
+        run: |
+          uv run python tests/native_package_lock_probe.py --diagnostics
+          /usr/bin/python3 -I tests/native_package_lock_probe.py --diagnostics
+          /usr/bin/python3 -I tests/native_package_lock_probe.py --all
+      - name: Prove read-only typed properties on the real PID1 private peer
+        if: runner.os == 'Linux'
+        run: sudo --non-interactive /usr/bin/python3 -I tests/native_systemd_property_probe.py
+      - run: uv run pytest --cov=opsark --cov-report=term-missing --cov-fail-under=80
+      - run: node --check web/app.js
+  managed-platforms:
+    name: Managed SSH + Nginx / ${{ matrix.image }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        image: ["ubuntu:24.04", "debian:12", "debian:13"]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
+        with:
+          version: "0.9.17"
+          python-version: "3.13"
+          enable-cache: true
+      - run: uv sync --locked
+      - name: Run real SSH and Nginx fault lab
+        env:
+          OPSARK_LAB_BASE_IMAGE: ${{ matrix.image }}
+        run: bash tests/lab/run.sh
+  activation-guests:
+    name: Controlled activation / ${{ matrix.image }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        image: ["debian:12", "debian:13"]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
+        with:
+          version: "0.9.17"
+          python-version: "3.13"
+          enable-cache: true
+      - run: uv sync --locked
+      - name: Run isolated native activation with synthetic patch prerequisites
+        env:
+          OPSARK_DISPOSABLE_ACTIVATION_LAB: "1"
+        run: uv run python tests/activation_guest_acceptance.py --image '${{ matrix.image }}'
+      - name: Install real Web acceptance browsers
+        run: uv run playwright install --with-deps chromium firefox webkit
+      - name: Run real console approval and SSH activation in fresh isolated guests
+        env:
+          OPSARK_DISPOSABLE_ACTIVATION_LAB: "1"
+        run: |
+          for browser in chromium firefox webkit; do
+            uv run python tests/activation_guest_acceptance.py --image '${{ matrix.image }}' --web-browser "$browser" --activation-rescan
+          done
+  readonly-service:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
+        with:
+          version: "0.9.17"
+          python-version: "3.13"
+          enable-cache: true
+      - run: uv sync --locked
+      - name: Install Chromium for the full test suite
+        run: uv run --locked playwright install --with-deps chromium
+      - run: uv run ruff format --check src tests deploy tools
+      - run: uv run ruff check src tests deploy tools
+      - run: uv run ty check src
+      - run: uv run ty check deploy --python-platform linux
+      - name: Diagnose controller and deployed Root lock runtimes
+        run: |
+          uv run python tests/native_package_lock_probe.py --diagnostics
+          /usr/bin/python3 -I tests/native_package_lock_probe.py --diagnostics
+          /usr/bin/python3 -I tests/native_package_lock_probe.py --all
+      - run: uv run pytest --cov=opsark --cov-report=term-missing --cov-fail-under=80
+      - run: node --check web/app.js
+      - name: Run isolated real Docker workload and SSH fault lab
+        env:
+          OPSARK_DISPOSABLE_DOCKER_LAB: "1"
+        run: bash tests/docker_lab/run.sh
+      - name: Build and start the read-only container
+        run: docker compose up --build --wait --wait-timeout 120
+      - name: Match built runtime files to the committed source bundle
+        run: |
+          set -euo pipefail
+          work=$(mktemp -d)
+          commit=$(git rev-parse HEAD)
+          archive="$work/opsark-candidate.tar.gz"
+          uv run python tools/release_bundle.py build --commit "$commit" --output "$archive"
+          checksum=$(sha256sum "$archive" | cut -d ' ' -f 1)
+          container=$(docker compose ps -q opsark)
+          test -n "$container"
+          mkdir "$work/runtime"
+          for entry in src web pyproject.toml uv.lock; do
+            docker cp "$container:/app/$entry" "$work/runtime/$entry"
+          done
+          uv run python tools/release_bundle.py verify-runtime "$archive" "$work/runtime" \
+            --expected-commit "$commit" --expected-sha256 "$checksum"
+      - name: Check authenticated container API
+        run: docker compose exec -T opsark python - < tests/container_smoke.py
+      - name: Check persisted reports after restart
+        run: |
+          docker compose restart
+          docker compose up --wait --wait-timeout 120
+          docker compose exec -T -e OPSARK_SMOKE_STAGE=verify opsark python - < tests/container_smoke.py
+      - name: Stop the isolated CI stack
+        if: always()
+        run: docker compose down --volumes

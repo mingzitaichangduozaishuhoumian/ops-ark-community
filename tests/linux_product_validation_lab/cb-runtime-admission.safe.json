@@ -1,0 +1,31 @@
+{
+  "confirmed": true,
+  "image_id": "sha256:fc5ad733e1ffe4f95d6083b8625b66ba90a192d74c51a0dc156d82b2b748f8e2",
+  "operation": "admit",
+  "probe": {
+    "commit": "cb928f4d6dbc1476043c74994050c2c3e40cd2c5",
+    "model_calls": 0,
+    "package_versions": {
+      "fastapi": "0.162.0",
+      "httpx": "0.28.1",
+      "paramiko": "5.1.0",
+      "playwright": "1.64.1",
+      "pydantic": "2.14.1",
+      "pytest": "9.1.1",
+      "pytest-cov": "7.1.0",
+      "ruff": "0.17.2",
+      "ty": "0.0.92",
+      "uvicorn": "0.54.0"
+    },
+    "python": "3.13.18",
+    "schema": "opsark-controller-runtime-admission/v1",
+    "source_files": 529,
+    "source_tree_sha256": "b20f244dc1b16fa24502ed347bf7ac4264c344191e4b91880b969c2ebd26ef03",
+    "uid": 10001
+  },
+  "probe_removed": true,
+  "run": "c75466ee3e35fef3",
+  "runtime_admitted": true,
+  "schema": "opsark-controller-runtime-host/v1",
+  "state": "admitted"
+}

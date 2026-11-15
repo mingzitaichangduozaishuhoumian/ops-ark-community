@@ -1,0 +1,67 @@
+{
+  "baseline_unchanged": true,
+  "confirmed": true,
+  "diagnostic": {
+    "audit": {
+      "loopback_http_attempts": 0,
+      "loopback_ssh_attempts": 0,
+      "native_loopback_http_attempts": 0,
+      "nonloopback_http_attempts": 0,
+      "nonloopback_ssh_attempts": 0,
+      "real_docker_attempts": 0,
+      "unapproved_native_attempts": 0
+    },
+    "collection_errors": [],
+    "counts": {
+      "collected": 479,
+      "collection_errors": 0
+    },
+    "product_validation_passed": false,
+    "pytest_exit": 0,
+    "raw_logs_read": false,
+    "schema": "opsark-linux-collection-diagnostic/v1",
+    "shape": {
+      "deselected": 1,
+      "exact_exclusions": true,
+      "files": {
+        "tests/test_ai.py": 34,
+        "tests/test_api.py": 30,
+        "tests/test_baselines.py": 57,
+        "tests/test_collector.py": 18,
+        "tests/test_collector_exec_deadline.py": 19,
+        "tests/test_compose_discovery.py": 38,
+        "tests/test_compose_discovery_api.py": 18,
+        "tests/test_diagnostics.py": 42,
+        "tests/test_health.py": 70,
+        "tests/test_host_onboarding.py": 32,
+        "tests/test_host_preflight.py": 51,
+        "tests/test_platforms.py": 26,
+        "tests/test_readonly_guard.py": 31,
+        "tests/test_redaction.py": 5,
+        "tests/test_replay.py": 8
+      },
+      "freeze_contract": "collected_nodes_invalid",
+      "maximum_node_length": 5094,
+      "required_nodes_present": {
+        "tests/test_health.py::test_native_curl_does_not_follow_redirects": true,
+        "tests/test_health.py::test_native_curl_ignores_curlrc_extra_url_and_headers": true,
+        "tests/test_health.py::test_native_curl_large_body_is_a_collection_error_not_a_success": true,
+        "tests/test_health.py::test_native_curl_loopback_body_and_host_header_match_registration": true,
+        "tests/test_readonly_guard.py::test_child_keeps_execution_lock_after_guard_process_is_killed": true
+      },
+      "root_node_present": false,
+      "unclassified_file_nodes": 0,
+      "unique_nodes": 479
+    },
+    "state": "observed",
+    "tests_executed": false
+  },
+  "operation": "general",
+  "original_11_safe_records_unchanged": true,
+  "own_container_removed": true,
+  "product_validation_passed": false,
+  "run": "8dd10cec10994b09",
+  "schema": "opsark-linux-product-host/v1",
+  "state": "diagnostic_complete",
+  "tests_executed": false
+}

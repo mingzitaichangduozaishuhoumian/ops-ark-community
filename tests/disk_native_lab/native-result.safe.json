@@ -1,0 +1,129 @@
+{
+  "baseline_unchanged": true,
+  "business_acceptance": "pending",
+  "confirmed": true,
+  "operation": "fixture",
+  "original_11_safe_records_unchanged": true,
+  "own_container_removed": true,
+  "run": "29999ece68d41859",
+  "schema": "opsark-disk-native-host/v1",
+  "state": "native_fixture_verified",
+  "summary": {
+    "checks": {
+      "baseline_save_readback": true,
+      "cross_directory_hardlinks_deduplicated": true,
+      "deleted_log_fd": true,
+      "deleted_objects_vanish_after_own_fds_close": true,
+      "diagnosis": true,
+      "duplicate_fd_one_holder": true,
+      "export": true,
+      "linked_and_deleted_business_excluded": true,
+      "mmap_has_no_registered_fd": true,
+      "mmap_only_object_invisible_after_unlink": true,
+      "mmap_released_by_child": true,
+      "model_projection_closed": true,
+      "no_fixture_paths_or_names_exported": true,
+      "registered_regular_fd_state": true,
+      "report_save_readback": true,
+      "same_scope_log_and_business_growth": true,
+      "scope_change_not_compared": true,
+      "sparse_allocation_below_logical": true,
+      "unknown_export_and_baseline_rejected": true,
+      "unknown_metric_whole_comparison_rejected": true,
+      "zero_model_calls": true
+    },
+    "model_calls": 0,
+    "native_linux_syscalls": true,
+    "physical_release_verified": false,
+    "product_transport": "replay",
+    "source_witness": {
+      "all_manifest_bytes_verified": true,
+      "capacity_measurement": "statvfs_root_device",
+      "commit": "01176af92147ec511081aa21f54810485abbf823",
+      "helper_sha256": "c58dd54c6bf9629b86c1e2d8ccd3ca3e2a68927024ad7917f23d816ce6b0c5a8",
+      "installation_executed": false,
+      "manifest_sha256": "4300767cc42aafaf706a3faa842b2f6e494ac2794a75b0d8a540509670f05db9",
+      "model_calls": 0,
+      "os_release_envelope": "declared_fixture_ubuntu_24_04",
+      "product_transport": "replay",
+      "real_default_filesystem": true,
+      "separate_child_holder": true,
+      "ssh_executed": false
+    },
+    "statvfs_observations": [
+      {
+        "available_blocks": 12012168,
+        "block_unit_bytes": 4096,
+        "blocks": 25318831,
+        "free_blocks": 13077883,
+        "free_inodes": 5388948,
+        "inodes": 6438912,
+        "stage": "before_files"
+      },
+      {
+        "available_blocks": 12006790,
+        "block_unit_bytes": 4096,
+        "blocks": 25318831,
+        "free_blocks": 13072505,
+        "free_inodes": 5388941,
+        "inodes": 6438912,
+        "stage": "files_created"
+      },
+      {
+        "available_blocks": 12006790,
+        "block_unit_bytes": 4096,
+        "blocks": 25318831,
+        "free_blocks": 13072505,
+        "free_inodes": 5388941,
+        "inodes": 6438912,
+        "stage": "deleted_fds_still_held"
+      },
+      {
+        "available_blocks": 12002676,
+        "block_unit_bytes": 4096,
+        "blocks": 25318831,
+        "free_blocks": 13068391,
+        "free_inodes": 5388939,
+        "inodes": 6438912,
+        "stage": "before_regular_fd_close"
+      },
+      {
+        "available_blocks": 12005748,
+        "block_unit_bytes": 4096,
+        "blocks": 25318831,
+        "free_blocks": 13071463,
+        "free_inodes": 5388942,
+        "inodes": 6438912,
+        "stage": "after_regular_fd_close"
+      },
+      {
+        "available_blocks": 12005748,
+        "block_unit_bytes": 4096,
+        "blocks": 25318831,
+        "free_blocks": 13071463,
+        "free_inodes": 5388942,
+        "inodes": 6438912,
+        "stage": "before_mmap_unlink"
+      },
+      {
+        "available_blocks": 12005748,
+        "block_unit_bytes": 4096,
+        "blocks": 25318831,
+        "free_blocks": 13071463,
+        "free_inodes": 5388942,
+        "inodes": 6438912,
+        "stage": "unlinked_mmap_still_held"
+      },
+      {
+        "available_blocks": 12006516,
+        "block_unit_bytes": 4096,
+        "blocks": 25318831,
+        "free_blocks": 13072231,
+        "free_inodes": 5388943,
+        "inodes": 6438912,
+        "stage": "after_mmap_release"
+      }
+    ]
+  },
+  "ubuntu_target_acceptance": "pending"
+}

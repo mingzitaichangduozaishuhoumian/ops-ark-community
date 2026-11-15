@@ -1,0 +1,236 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <link rel="icon" href="data:,">
+  <title>OpsArk · 运维控制台</title>
+  <link rel="stylesheet" href="/styles.css">
+  <script src="/defense.js" defer></script>
+  <script src="/nginx-dependencies.js" defer></script>
+  <script src="/app.js" defer></script>
+</head>
+<body>
+  <section id="login-screen" class="login-screen" aria-label="解锁控制台">
+    <div class="login-intro">
+      <div class="brand"><span class="brand-mark" aria-hidden="true">↗</span><span class="brand-name">ops/ark</span></div>
+      <div class="intro-copy"><p class="eyebrow">Evidence before action</p><h1>每个判断，<br>都能回到证据。</h1><p>普通 VPS 的故障调查与安全观察。<br>先建立事实，再决定下一步。</p></div>
+      <p class="intro-foot">READ-ONLY INVESTIGATION</p>
+    </div>
+    <div class="login-form-wrap">
+      <form id="login-form" class="login-form" method="post">
+        <p class="eyebrow">Local console</p><h2>解锁 OpsArk</h2><p class="muted">使用部署时设置或首次启动生成的控制台令牌。</p>
+        <label class="field" for="token-input">控制台令牌<input id="token-input" type="password" name="token" required autocomplete="off" spellcheck="false" maxlength="1024" aria-describedby="token-note"></label>
+        <p id="token-note" class="small muted">令牌只保留在当前页面内存，刷新后需要重新输入。此处不接收 SSH 密码或私钥。</p>
+        <p id="login-error" class="error" role="alert" hidden></p>
+        <button id="login-button" class="button primary full-width" type="submit">进入控制台 →</button>
+        <div class="service-line"><span class="status-dot" aria-hidden="true"></span><span id="service-status">正在检查本地服务…</span><button type="button" class="text-button" id="retry-status" hidden>重新检查</button></div>
+      </form>
+      <p class="login-boundary">调查与观察保持只读。修复能力和授权范围在解锁后单独核对。</p>
+    </div>
+  </section>
+
+  <div id="app-shell" class="shell" hidden>
+    <aside class="sidebar" aria-label="主导航">
+      <div class="brand"><span class="brand-mark" aria-hidden="true">↗</span><span class="brand-name">ops/ark</span></div>
+      <div class="sidebar-group"><p class="sidebar-label">运维与安全响应</p><nav class="navigation">
+        <button class="nav-button" type="button" data-view="workspace" aria-current="page"><span class="nav-index">01</span>调查工作台</button>
+        <button class="nav-button" type="button" data-view="hosts"><span class="nav-index">02</span>已登记主机</button>
+        <button class="nav-button" type="button" data-view="security"><span class="nav-index">03</span>安全观察<span id="security-alert-count" class="security-nav-count" hidden></span></button>
+        <button class="nav-button" type="button" data-view="capabilities"><span class="nav-index">04</span>能力与边界</button>
+        <button class="nav-button" type="button" data-view="remediation" id="remediation-nav" hidden><span class="nav-index">05</span><span id="remediation-nav-label">漏洞与修复</span></button>
+      </nav></div>
+      <div class="sidebar-foot"><strong>调查可以继续，执行保持受限。</strong><p>只读采集 · 证据记录<br>单管理员实例</p></div>
+    </aside>
+    <div class="main-area">
+      <header class="topbar"><div class="breadcrumb"><span>OpsArk</span><span aria-hidden="true">/</span><strong id="view-label">调查工作台</strong></div><div class="topbar-actions"><span id="console-mode-badge" class="badge green">只读 / 安全观察</span><button type="button" class="text-button" id="logout-button">退出控制台</button></div></header>
+      <main class="content">
+        <section id="automation-mode-section" class="automation-mode-section" aria-labelledby="automation-mode-title" hidden><div class="automation-mode-heading"><div><p class="eyebrow">Operating mode</p><h2 id="automation-mode-title">选择决策方式，核对执行边界。</h2></div><button class="text-button" type="button" id="refresh-automation">重新读取</button></div><p id="automation-current" class="small muted">等待模式信息。</p><form id="automation-mode-form" class="automation-mode-form"><label class="field" for="automation-mode-select">操作模式<select id="automation-mode-select" disabled><option value="manual">手动 · 仅建议</option><option value="assisted">半自动 · 批准后执行</option><option value="automatic">全自动 · 授权范围内执行</option></select></label><button class="button" id="save-automation-mode" type="submit" disabled>保存模式</button></form><p id="automation-mode-description" class="small muted"></p><div id="automation-execution-boundary" class="notice neutral"></div><details class="automation-policy"><summary>查看当前授权范围</summary><div id="automation-policy-details"></div></details><p id="automation-error" class="error" role="alert" hidden></p></section>
+        <p id="app-error" class="notice error-notice" role="alert" hidden></p>
+        <p id="app-message" class="notice neutral" role="status" hidden></p>
+
+        <section id="view-workspace" aria-label="调查工作台">
+          <div class="page-heading"><div><p class="eyebrow">Investigation workspace</p><h1 id="workspace-heading" tabindex="-1">从异常，走向可复核的判断。</h1><p class="muted">选择数据来源，运行调查，逐项查看事实与仍缺失的信息。</p></div></div>
+          <form id="investigation-form" class="investigation-form" method="post">
+            <div class="form-heading"><h2>新建调查</h2><span id="selection-source" class="badge amber">样本回放 · 合成数据</span></div>
+            <div class="form-fields"><label class="field" for="source-select">数据来源<select id="source-select" name="source"><option value="replay">本地样本回放</option><option value="ssh">已登记 SSH 主机</option></select></label><label class="field grow" for="sample-select" id="sample-field">回放样本<select id="sample-select" name="sample"></select></label><label class="field grow" for="host-select" id="host-field" hidden>已登记主机<select id="host-select" name="host"></select></label><label class="field" for="scenario-select" id="scenario-field" hidden>调查场景<select id="scenario-select" name="scenario"><option value="web_502">网站 502</option><option value="disk">磁盘空间异常</option><option value="container_restart">容器反复重启</option><option value="ssh_security">SSH 安全观察</option></select></label><button type="submit" id="run-investigation" class="button primary">运行只读调查 →</button></div>
+            <p id="selection-note" class="small muted">样本回放读取合成检查结果，经实际诊断规则生成报告，不代表真实服务器检查。</p>
+            <button id="open-host-onboarding" class="text-button" type="button" hidden>准备接入新主机 →</button>
+            <p id="investigation-progress" class="small progress-message" role="status" hidden></p>
+          </form>
+
+          <div class="workspace-layout">
+            <aside class="report-history" aria-label="报告历史"><div class="list-heading"><h2>最近报告</h2><button id="refresh-reports" type="button" class="text-button">刷新</button></div><div id="report-list"><p class="empty-note">尚未加载报告。</p></div></aside>
+            <article id="report-container" class="report-container" aria-label="调查报告">
+              <div id="report-empty" class="report-empty"><span class="empty-symbol" aria-hidden="true">↗</span><p class="eyebrow">An investigation starts here</p><h2>选择样本，开始第一份调查。</h2><p>报告会保留数据来源、证据状态和缺失信息。<br>还没有报告时，不显示预置诊断结论。</p></div>
+              <div id="report-content" hidden>
+                <header class="report-header">
+                  <div class="report-kicker"><span class="eyebrow" id="report-id"></span><span id="report-source" class="badge amber"></span></div>
+                  <div class="report-title-row"><h2 id="report-title"></h2><span id="report-status" class="badge neutral"></span></div>
+                  <p id="report-context" class="small muted"></p>
+                  <div class="report-actions"><span id="report-time" class="small muted"></span><button id="export-report" class="text-button" type="button">↓ 导出内部报告</button><button id="export-handoff" class="text-button" type="button" aria-describedby="report-handoff-note">下载客户交接摘要</button></div>
+                  <p id="report-handoff-note" class="small muted">交接摘要提供调查结果和验收状态，省略原始日志与主机地址。</p>
+                </header>
+                <div class="report-tabs" role="tablist" aria-label="报告详情"><button type="button" class="report-tab" id="tab-diagnosis" data-tab="diagnosis" role="tab" aria-controls="report-panel" aria-selected="true">调查结论</button><button type="button" class="report-tab" id="tab-evidence" data-tab="evidence" role="tab" aria-controls="report-panel" aria-selected="false" tabindex="-1">证据记录</button><button type="button" class="report-tab" id="tab-boundary" data-tab="boundary" role="tab" aria-controls="report-panel" aria-selected="false" tabindex="-1">处置边界</button><button type="button" class="report-tab" id="tab-verification" data-tab="verification" role="tab" aria-controls="report-panel" aria-selected="false" tabindex="-1">恢复验收</button></div>
+                <div id="report-panel" class="report-panel" role="tabpanel" aria-labelledby="tab-diagnosis"></div>
+              </div>
+            </article>
+          </div>
+        </section>
+
+        <section id="view-hosts" aria-label="已登记主机" hidden>
+          <div class="page-heading"><div><p class="eyebrow">Registered targets</p><h1>目标明确，才开始采集。</h1><p class="muted">这里只列出服务端允许调查的 SSH 主机，登记信息不代表连接已经验证。</p></div></div>
+          <div class="notice neutral"><strong>主机与凭据由部署者登记</strong><p>当前版本从服务端 TOML 配置读取目标和凭据引用。控制台不接收私钥、密码、任意路径或 Shell 命令。</p></div>
+          <details id="host-onboarding" class="host-onboarding" hidden>
+            <summary>准备接入新主机</summary>
+            <form id="host-onboarding-form" autocomplete="off">
+              <fieldset>
+                <legend><span class="mono" aria-hidden="true">01</span> 登记信息</legend>
+                <div class="host-onboarding-fields">
+                  <label class="field">主机标识<input name="host_id" required maxlength="80" placeholder="node-a" autocapitalize="off" spellcheck="false"></label>
+                  <label class="field">主机名称<input name="name" required maxlength="120" placeholder="测试服务器"></label>
+                  <label class="field">SSH 地址<input name="address" required maxlength="64" placeholder="IPv4 或 IPv6 地址" autocapitalize="off" spellcheck="false"></label>
+                  <label class="field">SSH 端口<input name="port" type="number" min="1" max="65535" value="22" required></label>
+                  <label class="field">专用非 root 账号<input name="username" required maxlength="32" value="opsark-readonly" autocapitalize="off" spellcheck="false"></label>
+                  <label class="field">网站域名<input name="site_domain" required maxlength="253" placeholder="app.example.com" autocapitalize="off" spellcheck="false"></label>
+                  <label class="field">登记容器名（可选）<input name="container_name" maxlength="80" placeholder="未知时可先授权 Compose 项目" autocapitalize="off" spellcheck="false"></label>
+                  <label class="field">预期上游端口<input name="expected_upstream_port" type="number" min="1" max="65535" value="8081" required></label>
+                  <label class="field">Compose 项目（可选）<input name="compose_project" maxlength="63" pattern="[a-z0-9][a-z0-9_-]*" placeholder="仅授权此项目的只读发现" autocapitalize="off" spellcheck="false"></label>
+                </div>
+                <p class="small muted">容器名与 Compose 项目至少填写一项。未知容器名时，先填项目并生成待确认登记，再从主机卡片只读发现。空项目名不会开启发现；项目授权不表示 Nginx 依赖已经确认，也不允许执行或改写配置。</p>
+              </fieldset>
+              <fieldset>
+                <legend><span class="mono" aria-hidden="true">02</span> 核对 SSH 主机身份</legend>
+                <p id="host-onboarding-trust-note" class="small muted">从服务商控制台或其他可信渠道取得主机公钥，并独立核对 SHA256 指纹。这里只生成配置材料，SSH 连接由登记后的预检发起。</p>
+                <label class="field">SSH 主机公钥<textarea name="host_key" required rows="3" maxlength="8192" placeholder="ssh-ed25519 …" aria-describedby="host-onboarding-trust-note host-onboarding-private-note" autocapitalize="off" spellcheck="false"></textarea></label>
+                <p id="host-onboarding-private-note" class="small muted">请勿粘贴主机私钥、登录私钥或密码。</p>
+                <label class="field">已核验的 SHA256 指纹<input name="expected_fingerprint" required maxlength="50" placeholder="SHA256:…" autocapitalize="off" spellcheck="false"></label>
+                <label class="checkbox-line"><input id="host-onboarding-confirm" type="checkbox" required><span>我已通过可信渠道独立核对目标主机的 SHA256 指纹。</span></label>
+                <button id="host-onboarding-prepare" class="button primary" type="submit">生成接入材料</button>
+                <p id="host-onboarding-status" class="small muted" role="status"></p>
+                <p id="host-onboarding-error" class="error" role="alert" hidden></p>
+              </fieldset>
+            </form>
+            <section id="host-onboarding-result" class="host-onboarding-result" aria-labelledby="host-onboarding-result-title" hidden>
+              <h2 id="host-onboarding-result-title"><span class="mono" aria-hidden="true">03</span> 部署并预检</h2>
+              <p id="host-onboarding-result-fingerprint" class="small mono"></p>
+              <p class="small muted">将 TOML 片段合并到主机清单，每个主机标识只登记一次。以下路径相对主机清单所在目录。把专用非 root 账号的登录私钥存放到部署端的 <code id="host-onboarding-key-file"></code> 并限制文件权限。</p>
+              <div class="host-onboarding-artifacts">
+                <div><label class="field">主机清单 TOML<textarea id="host-onboarding-inventory" rows="8" readonly wrap="off" spellcheck="false"></textarea></label><button class="text-button" type="button" data-onboarding-copy="inventory">复制 TOML</button></div>
+                <div><label class="field">known_hosts 记录<textarea id="host-onboarding-known-hosts" rows="4" readonly wrap="off" spellcheck="false"></textarea></label><button class="text-button" type="button" data-onboarding-copy="known-hosts">复制 known_hosts</button><p class="small muted">将完整记录保存为 <code id="host-onboarding-known-hosts-file"></code>，使用无 BOM 的 UTF-8 编码，保留末尾换行。</p></div>
+              </div>
+              <p id="host-onboarding-next" class="small"></p>
+              <button id="host-onboarding-preflight" class="button" type="button" hidden>前往已登记主机的预检</button>
+              <p id="host-onboarding-copy-status" class="small muted" role="status"></p>
+            </section>
+          </details>
+          <div id="host-list" class="host-list"></div>
+        </section>
+        <section id="view-security" aria-label="安全观察" hidden>
+          <div class="page-heading security-heading"><div><p class="eyebrow">Security observation</p><h1>持续留意，逐条核实。</h1><p class="muted">按登记范围读取 SSH 与 Web 分类事件，关联时间窗与证据；告警只提示需要核对的线索。</p></div><button class="button" type="button" id="refresh-security">刷新观察</button></div>
+          <div class="notice neutral security-boundary"><strong>只读观察 · 控制台告警</strong><p>不执行封禁、重启或修复。认证失败可能来自合法任务，同源成功记录也不能单独证明入侵；标记已阅不等于风险解除。</p></div>
+          <p id="security-error" class="notice error-notice" role="alert" hidden></p>
+          <div id="security-monitor-summary" class="security-monitor-summary" aria-label="观察运行状态"><p class="empty-note">打开后读取当前实例的观察状态。</p></div>
+          <div class="section-heading"><h2>登记目标的采集状态</h2><span id="security-last-refresh" class="small muted"></span></div>
+          <div id="security-host-list" class="security-host-list"></div>
+          <div class="security-layout"><aside class="security-alerts" aria-label="安全告警列表"><div class="list-heading"><h2>最近告警</h2><span id="security-list-count" class="small muted"></span></div><div id="security-alert-list"><p class="empty-note">尚未读取告警。</p></div></aside><article id="security-alert-detail" class="security-alert-detail" aria-label="告警与证据"><p class="empty-note">选择一条告警，核对来源、发生时间和证据。</p></article></div>
+          <section id="ssh-defense-workspace" class="ssh-defense-workspace" aria-labelledby="ssh-defense-title" hidden>
+            <div class="section-heading"><div><p class="eyebrow">Bounded defense / Original request</p><h2 id="ssh-defense-title">同一个任务，把处置查清楚。</h2></div><span class="badge amber">实验性 · 固定隔离范围</span></div>
+            <p class="small muted">此通道仅支持专用隔离网络中的单来源 SSH 临时封禁，TTL 固定 60 秒。观察、执行及 AI 费用分别授权；不提供公网全面防御，也尚未启用持续自动执行。</p>
+            <div class="ssh-defense-toolbar"><label class="field" for="ssh-defense-host">当前与历史目标<select id="ssh-defense-host" data-defense="host"></select></label><button class="button" type="button" data-defense="refresh">刷新事务记录</button><button class="text-button" type="button" data-defense="history-targets" hidden>加载更多历史目标</button><button class="button" type="button" data-defense="arm" disabled>核对并建立观察窗口</button></div>
+            <div class="ssh-defense-status" data-defense="status" aria-label="事务许可与模式"></div>
+            <p data-defense="progress" class="small muted" role="status"></p><p data-defense="error" class="notice error-notice" role="alert" hidden></p>
+            <div class="ssh-defense-layout"><aside aria-label="防护原任务历史"><h3>原任务记录</h3><div data-defense="history" class="ssh-defense-history"></div></aside><article data-defense="detail" class="ssh-defense-detail" aria-label="所选原任务"></article></div>
+            <div data-defense="sources" class="ssh-defense-sources"></div><div data-defense="ai" class="ssh-defense-ai"></div>
+            <p class="ssh-defense-footnote">最近确认与当前未知分别保留。连接中断后只查询原任务，不重新建立意图、不重放动作、不延长封禁时间。AI 只读取明确白名单摘要，建议不能替代执行许可。</p>
+            <dialog data-defense="dialog" class="ssh-defense-dialog" aria-labelledby="ssh-defense-dialog-title"><div class="dialog-content"><p class="eyebrow">Review exact intent</p><h2 id="ssh-defense-dialog-title" data-defense="dialog-title"></h2><div data-defense="dialog-summary"></div><label class="checkbox-line"><input type="checkbox" data-defense="confirm"><span data-defense="confirm-label"></span></label><div class="dialog-actions"><button class="button" type="button" data-defense="cancel">取消</button><button class="button primary" type="button" data-defense="send" disabled>确认本次操作</button></div></div></dialog>
+          </section>
+        </section>
+        <section id="view-remediation" aria-label="漏洞扫描与补丁修复" hidden>
+          <div class="page-heading remediation-heading"><div><p class="eyebrow">Find / repair / verify</p><h1 id="remediation-title">让修复，走到验证这一步。</h1><p id="remediation-description" class="muted">核实已安装软件与供应商修复版本，逐项预览真实变化，并追踪同一个任务的执行结果。</p></div><button class="button" type="button" id="refresh-remediation">刷新记录</button></div>
+          <section id="automatic-repair-section" class="automatic-repair-section" aria-labelledby="automatic-repair-title" hidden>
+            <div class="automatic-repair-heading"><div><p class="eyebrow">Preauthorized repair</p><h2 id="automatic-repair-title">自动处置，始终有明确范围。</h2><p class="small muted">后台只在预授权目标、软件包、公告、UTC 维护窗口与配额内处理。选择全自动不会创建授权，也不会解除已有暂停。</p></div><button id="refresh-automatic-repair" class="button" type="button">刷新自动状态</button></div>
+            <p id="automatic-repair-error" class="notice error-notice" role="alert" hidden></p>
+            <div id="automatic-repair-summary" class="automatic-repair-summary" aria-label="预授权自动处置运行状态"></div>
+            <div id="automatic-repair-hosts" class="automatic-repair-hosts" aria-label="各目标的自动处置范围与暂停状态"></div>
+            <details class="automatic-repair-grants"><summary>核对部署端预授权</summary><div id="automatic-repair-grant-list"></div></details>
+            <div id="automatic-repair-jobs" class="automatic-repair-jobs" aria-label="自动处置任务记录"></div>
+            <section id="automatic-ai-section" class="automatic-recovery-section" aria-labelledby="automatic-ai-title" hidden><div class="section-heading"><h3 id="automatic-ai-title">AI 自动分析与处置告警</h3><span class="small muted">独立分析预算 · 原任务跟进</span></div><div id="automatic-ai-summary"></div><div id="automatic-ai-requests"></div><div id="automatic-ai-alerts"></div><p class="small muted">模型只选择已核实候选。失败或未知记录不会自动重发；已阅仅记录核对进度，不重试分析、不解除暂停。</p></section>
+            <section id="automatic-recovery-section" class="automatic-recovery-section" aria-labelledby="automatic-recovery-title" hidden><div class="section-heading"><h3 id="automatic-recovery-title">暂停恢复与审计</h3><span class="small muted">先核对原任务，再批准这次恢复</span></div><p id="automatic-recovery-progress" class="small muted" role="status"></p><p id="automatic-recovery-error" class="notice error-notice" role="alert" hidden></p><div id="automatic-recovery-records" class="automatic-recovery-records"></div><p class="small muted">恢复只解除已核实的持续暂停，不安装补丁、不重置用量、不重新签发授权，也不切换到自动模式。结果未知时只查询原恢复记录。</p></section>
+            <p class="automatic-repair-footnote">状态由后台读取，本页不创建自动任务。结果未知、执行失败、重启待办或验证不完整时保留原任务并暂停；恢复处置需要部署端核实。AI 配置与解释能力单独列示。</p>
+          </section>
+          <section id="vulnerability-watch-section" class="vulnerability-watch-section" aria-labelledby="vulnerability-watch-title" hidden>
+            <div class="vulnerability-watch-heading"><div><p class="eyebrow">Scheduled observation</p><h2 id="vulnerability-watch-title">按时核查，把变化留在证据里。</h2><p id="vulnerability-watch-boundary-copy" class="small muted">后台按登记范围只读扫描，本页只读取记录；发现漏洞不会自动安装补丁。</p></div><button id="refresh-vulnerability-watch" class="button" type="button">刷新定期观察</button></div>
+            <p id="vulnerability-watch-error" class="notice error-notice" role="alert" hidden></p>
+            <div id="vulnerability-watch-summary" class="vulnerability-watch-summary" aria-label="定期漏洞观察状态"></div>
+            <div id="vulnerability-watch-hosts" class="vulnerability-watch-hosts" aria-label="登记目标的定期扫描状态"></div>
+            <div class="vulnerability-watch-layout"><aside class="vulnerability-watch-alerts" aria-label="漏洞观察告警列表"><div class="list-heading"><h3>观察通知</h3><span id="vulnerability-watch-count" class="small muted"></span></div><div id="vulnerability-watch-alert-list"></div></aside><article id="vulnerability-watch-detail" class="vulnerability-watch-detail" aria-label="漏洞观察告警与证据"></article></div>
+            <p class="vulnerability-watch-footnote">通知按目标、范围与具体记录去重。“已阅”只记录核对进度；一条复扫不再受影响，也不能代表整机或其他业务均已安全。</p>
+          </section>
+          <div id="remediation-patch-workspace">
+          <div id="remediation-boundary" class="notice neutral"><strong>正在核对当前实例的修复能力。</strong></div>
+          <p id="remediation-error" class="notice error-notice" role="alert" hidden></p>
+          <form id="remediation-scan-form" class="remediation-scan-form"><label class="field" for="remediation-host-select">登记的测试目标<select id="remediation-host-select" disabled><option value="">等待登记信息</option></select></label><button class="button primary" type="submit" id="run-remediation-scan" disabled>扫描漏洞</button><p id="remediation-progress" class="small muted" role="status"></p></form>
+          <div class="remediation-workspace"><div class="remediation-findings-panel"><div class="section-heading"><h2>扫描证据</h2><span id="remediation-scan-time" class="small muted"></span></div><div id="remediation-scan-summary"><p class="empty-note">选择登记目标，主动发起一次扫描。</p></div><div id="remediation-findings"></div></div><article id="remediation-plan" class="remediation-plan" aria-label="具体修复方案"><p class="empty-note">从已确认受影响的记录生成方案，核对版本、影响和授权后再执行。</p></article></div>
+          <section id="vulnerability-ai-section" class="vulnerability-ai-section" aria-labelledby="vulnerability-ai-title" hidden>
+            <div class="vulnerability-ai-heading"><div><p class="eyebrow">Evidence / reasoning / proposal</p><h2 id="vulnerability-ai-title">让 AI 参与分析，让证据约束方案。</h2><p class="small muted">发送前核对脱敏证据。模型给出判断、引用和修复提案，服务器随后重新核验具体变化。</p></div><button id="refresh-vulnerability-ai" class="button" type="button">读取分析记录</button></div>
+            <div id="vulnerability-ai-provider" class="vulnerability-ai-provider" aria-label="AI 提供方配置状态"></div>
+            <div class="vulnerability-ai-actions"><button id="preview-vulnerability-ai" class="button primary" type="button" disabled>预览证据并请求 AI 分析</button><p id="vulnerability-ai-progress" class="small muted" role="status"></p></div>
+            <p id="vulnerability-ai-error" class="notice error-notice" role="alert" hidden></p>
+            <div class="vulnerability-ai-layout"><aside id="vulnerability-ai-history" class="vulnerability-ai-history" aria-label="模型分析记录"></aside><article id="vulnerability-ai-detail" class="vulnerability-ai-detail" aria-label="扫描事实、AI 判断与修复提案"></article></div>
+            <p class="vulnerability-ai-footnote">AI 提案不提供执行权限。生成真实计划不会安装补丁；安装仍需核对当前授权并批准精确方案。部分覆盖、没有候选或模型未返回，都不能证明整机安全。</p>
+          </section>
+          <div class="section-heading"><h2>修复任务</h2><span class="small muted">重连后查询原任务，不重复安装</span></div><div class="remediation-jobs-layout"><div id="remediation-job-list" class="remediation-job-list"><p class="empty-note">尚未读取任务。</p></div><article id="remediation-job-detail" class="remediation-job-detail" aria-label="任务状态与修复验证"><p class="empty-note">选择任务，核对安装、重启待办和业务验证。</p></article></div>
+          <section id="service-activation-section" class="vulnerability-ai-section" aria-labelledby="service-activation-title" hidden><div class="section-heading"><div><p class="eyebrow">Activate / verify</p><h2 id="service-activation-title">补丁已安装，让服务加载新版本。</h2></div><button id="refresh-service-activations" class="button" type="button">读取激活记录</button></div><p id="service-activation-summary" class="small muted"></p><p id="service-activation-progress" class="small muted" role="status"></p><p id="service-activation-error" class="notice error-notice" role="alert" hidden></p><div id="service-activation-pending" class="remediation-job-list"></div><div class="remediation-jobs-layout"><div id="service-activation-records" class="remediation-job-list" aria-label="服务激活记录"></div><article id="service-activation-detail" class="remediation-job-detail" aria-label="服务激活与验证结果"></article></div><p class="small muted">激活单独批准并留证。原安装任务和暂停记录保留；此操作不会解除暂停或重新安装补丁。</p></section>
+          <section id="activation-recovery-section" class="vulnerability-ai-section" aria-labelledby="activation-recovery-title" hidden><div class="section-heading"><div><p class="eyebrow">Reconcile the exact pause</p><h2 id="activation-recovery-title">激活已验证，再核对这一条暂停。</h2></div><button id="refresh-activation-recoveries" class="button" type="button">读取恢复记录</button></div><p id="activation-recovery-summary" class="small muted"></p><p id="activation-recovery-progress" class="small muted" role="status"></p><p id="activation-recovery-error" class="notice error-notice" role="alert" hidden></p><div id="activation-recovery-candidates" class="remediation-job-list"></div><div class="remediation-jobs-layout"><div id="activation-recovery-records" class="remediation-job-list" aria-label="激活后的暂停恢复记录"></div><article id="activation-recovery-detail" class="remediation-job-detail" aria-label="暂停恢复核验与回执"></article></div><p class="small muted">服务激活、原安装任务和原暂停分别保留。恢复仅解除明确批准的原安全原因，不重装、不重启、不重置用量或授权，也不切换到自动模式。</p></section>
+          </div>
+          <section id="nginx-actions-section" class="vulnerability-ai-section nginx-actions" aria-label="Nginx 受控变更" hidden></section>
+          <section id="container-restarts-section" class="vulnerability-ai-section" aria-label="受控容器重启" hidden></section>
+        </section>
+        <section id="view-capabilities" aria-label="能力与边界" hidden><div class="page-heading"><div><p class="eyebrow">Capabilities and limits</p><h1>知道看到了什么，也知道还缺什么。</h1><p class="muted">调查与安全观察保持只读，修复能力和每份计划的授权单独核对。</p></div></div><div class="capability-layout"><div class="capability-sheet"><h2>当前实例</h2><dl id="capability-details" class="detail-list"></dl></div><div class="capability-sheet"><h2>执行与判断边界</h2><ul class="plain-list"><li>只选择服务端登记的目标和预定义检查，不接受任意命令。</li><li>证据缺失、权限不足和连接失败单独记录，不解释成系统健康。</li><li>样本回放始终标记为合成数据，SSH 采集与回放报告分别显示来源。</li><li>退出码或单条日志不能独立证明故障根因或成功入侵。</li><li id="capability-execution-boundary">本版本不执行修复、重启或封禁；即时站点结果不等于完整恢复验收。</li><li>观测基线仅用于字段对照，不证明健康，不是配置备份或回退点。</li><li>AI 根据脱敏证据分析并提出候选方案；事实、权限和安装结果仍由服务器独立核验。</li></ul><p class="small muted">当前为单管理员实例。不同客户需要独立部署；本版不提供多租户权限隔离。</p></div></div></section>
+        <footer><span>OPSARK / READ-ONLY INVESTIGATION</span><span>证据可复核 · 结论保留边界</span></footer>
+      </main>
+    </div>
+  </div>
+
+  <dialog id="service-activation-dialog" aria-labelledby="service-activation-dialog-title"><div class="dialog-content"><p class="eyebrow">Approve one service activation</p><h2 id="service-activation-dialog-title" tabindex="-1">批准这次服务激活？</h2><p class="notice">将重启预览中明确登记的一个服务，连接可能短暂中断。完成后重新检查进程、库版本、业务和新的管理连接。</p><div id="service-activation-dialog-summary"></div><details><summary>核对完整预览与证据指纹</summary><pre id="service-activation-dialog-evidence" class="vulnerability-ai-input"></pre></details><label class="checkbox-line"><input id="service-activation-confirm" type="checkbox"><span>我已核对原任务、服务和影响，批准本次预览中的单服务激活。</span></label><p id="service-activation-dialog-error" class="error" role="alert" hidden></p><div class="dialog-actions"><button id="service-activation-cancel" class="button" type="button">取消</button><button id="service-activation-execute" class="button primary" type="button" disabled>批准激活并验证</button></div></div></dialog>
+  <dialog id="activation-recovery-dialog" aria-labelledby="activation-recovery-dialog-title"><div class="dialog-content"><p class="eyebrow">Review one resolved cause</p><h2 id="activation-recovery-dialog-title" tabindex="-1">批准解除这条已核验的暂停？</h2><p class="notice">服务器会再次核对原安装、已验证激活、包版本、运行时与新管理连接。只有精确对应的安全原因通过，才完成本次恢复；原历史不改写。</p><div id="activation-recovery-dialog-summary"></div><details><summary>核对完整恢复预览与证据指纹</summary><pre id="activation-recovery-dialog-evidence" class="vulnerability-ai-input"></pre></details><label class="checkbox-line"><input id="activation-recovery-confirm" type="checkbox"><span>我已核对原任务、激活回执和暂停原因，批准这份有效方案对应的独立恢复。</span></label><p id="activation-recovery-dialog-error" class="error" role="alert" hidden></p><div class="dialog-actions"><button id="activation-recovery-cancel" class="button" type="button">取消</button><button id="activation-recovery-execute" class="button primary" type="button" disabled>批准这次暂停恢复</button></div></div></dialog>
+
+  <dialog id="ai-dialog" aria-labelledby="ai-dialog-title"><div class="dialog-content"><p class="eyebrow">Model explanation</p><h2 id="ai-dialog-title">发送脱敏摘要给模型？</h2><p>将发送当前报告的脱敏事实、候选原因、站点检查与观测差异摘要，由实例配置的模型提供方处理。原始日志、响应正文和配置全文不会发送。</p><p id="ai-dialog-model" class="small muted"></p><div class="notice neutral">AI 解释是补充信息，不覆盖诊断事实，不产生系统操作，也不证明服务已恢复。</div><label class="checkbox-line"><input id="ai-confirm" type="checkbox"><span>我同意发送当前报告的脱敏摘要。</span></label><p id="ai-dialog-error" class="error" role="alert" hidden></p><div class="dialog-actions"><button class="button" type="button" id="ai-cancel">取消</button><button class="button primary" type="button" id="ai-send" disabled>发送摘要并解释</button></div></div></dialog>
+  <dialog id="baseline-dialog" aria-labelledby="baseline-dialog-title"><div class="dialog-content"><p class="eyebrow">Observation baseline</p><h2 id="baseline-dialog-title">保存当前观测字段？</h2><p id="baseline-dialog-report" class="small muted"></p><p>仅保存这份报告中已取得、完整且可解释的字段，供同一目标和场景的后续调查对照。当前历史报告不会重写，服务器配置不会改变。</p><div class="notice neutral">观测记录不证明目标健康；它没有可恢复的配置正文，不是备份或回退点。回放记录只用于模拟对照。</div><label class="checkbox-line"><input id="baseline-confirm" type="checkbox"><span>我理解这只是观测基线，不能作为已恢复或可回退的依据。</span></label><p id="baseline-dialog-error" class="error" role="alert" hidden></p><div class="dialog-actions"><button class="button" type="button" id="baseline-cancel">取消</button><button class="button primary" type="button" id="baseline-send" disabled>保存观测基线</button></div></div></dialog>
+  <dialog id="handoff-dialog" aria-labelledby="handoff-dialog-title"><div class="dialog-content">
+    <p class="eyebrow">Customer handoff</p><h2 id="handoff-dialog-title" tabindex="-1">下载客户交接摘要</h2>
+    <p>可下载调查摘要，或选择原处置任务及其业务复验。</p>
+    <label id="handoff-action-field" class="field" hidden>处置任务（可选）<select id="handoff-action" disabled><option value="">使用调查或补丁摘要</option></select></label>
+    <p id="handoff-action-list-status" class="small muted" role="status"></p>
+    <div id="handoff-action-detail" hidden>
+      <label class="field">处置复验记录<select id="handoff-action-recheck" disabled><option value="">使用当前复验状态</option></select></label>
+      <div class="nginx-actions-buttons">
+        <button id="handoff-action-run" class="button" type="button" aria-describedby="handoff-action-status" disabled>运行只读复验</button>
+        <button id="handoff-action-refresh" class="button" type="button" hidden>重新核对复验</button>
+      </div>
+      <p id="handoff-action-status" class="small muted" role="status"></p>
+    </div>
+    <div id="handoff-patch-fields">
+      <label class="field">补丁任务（可选）<select id="handoff-job" disabled><option value="">仅导出本次调查</option></select></label>
+      <label class="field">后续复验记录（可选）<select id="handoff-recheck" aria-describedby="handoff-recheck-note" disabled><option value="">暂不附加复验记录</option></select></label>
+      <p id="handoff-recheck-note" class="small muted">只附补丁任务时，摘要会标注待验收。</p>
+      <div id="handoff-recheck-action" hidden>
+        <button id="handoff-run-recheck" class="button" type="button" aria-describedby="handoff-run-recheck-note" disabled>运行只读复验</button>
+        <p id="handoff-run-recheck-note" class="small muted" role="status"></p>
+      </div>
+      <p id="handoff-recheck-result" class="notice neutral" role="status" hidden></p>
+    </div>
+    <p id="handoff-dialog-status" class="small muted" role="status"></p><p id="handoff-dialog-error" class="error" role="alert" hidden></p>
+    <div class="dialog-actions"><button id="handoff-cancel" class="button" type="button">取消</button><button id="handoff-download" class="button primary" type="button" disabled>下载 Markdown</button></div>
+  </div></dialog>
+  <dialog id="vulnerability-ai-dialog" aria-labelledby="vulnerability-ai-dialog-title"><div class="dialog-content"><p class="eyebrow">Review evidence before sending</p><h2 id="vulnerability-ai-dialog-title" tabindex="-1">把这份漏洞证据发送给模型？</h2><p id="vulnerability-ai-dialog-target" class="small muted"></p><div class="notice neutral"><strong>只发送本次预览中的结构化证据。</strong><p>主机和证据使用临时别名，不发送原始日志、IP、域名、私钥或模型凭据。模型调用可能计费，发送后不会因页面断线自动重发。</p></div>
+  <div id="vulnerability-ai-selection-wrap" hidden><label for="vulnerability-ai-selection">本次分析范围</label><select id="vulnerability-ai-selection" disabled></select><p class="small muted">每次集中分析一个候选，其他漏洞仍保留在原始扫描中。切换范围后需要重新确认。</p></div>
+  <details class="vulnerability-ai-input-wrap" open><summary>查看将发送的数据</summary><pre id="vulnerability-ai-input" class="vulnerability-ai-input"></pre></details><label class="checkbox-line"><input id="vulnerability-ai-confirm" type="checkbox" disabled><span>我同意把这份预览对应的证据发送给所示提供方，生成漏洞分析与修复提案。</span></label><p id="vulnerability-ai-dialog-error" class="error" role="alert" hidden></p><div class="dialog-actions"><button id="vulnerability-ai-cancel" class="button" type="button">取消</button><button id="vulnerability-ai-send" class="button primary" type="button" disabled>发送证据并分析</button></div></div></dialog>
+  <p id="announcement" class="sr-only" role="status" aria-live="polite"></p>
+  <dialog id="remediation-dialog" aria-labelledby="remediation-dialog-title"><div class="dialog-content"><p class="eyebrow">Approve this exact plan</p><h2 id="remediation-dialog-title">批准这份补丁修复方案？</h2><div id="remediation-dialog-summary"></div><div class="notice"><strong>升级可能触发服务重启。</strong><p>将执行这份计划内的精确软件包变化，再复扫并验证服务。安装成功、等待重启和验证失败会分别记录。</p></div><label class="checkbox-line"><input id="remediation-confirm" type="checkbox"><span>我已核对当前主机、软件包差异和重启影响，批准这份有效方案。</span></label><p id="remediation-dialog-error" class="error" role="alert" hidden></p><div class="dialog-actions"><button class="button" type="button" id="remediation-cancel">取消</button><button class="button primary" type="button" id="remediation-execute" disabled>批准并执行这份方案</button></div></div></dialog>
+  <dialog id="security-ai-dialog" aria-labelledby="security-ai-dialog-title"><div class="dialog-content"><p class="eyebrow">Evidence to advice</p><h2 id="security-ai-dialog-title">发送分类证据给模型？</h2><p id="security-ai-dialog-target" class="small muted"></p><p>将发送经过重建的事件类别、状态、计数与时间，目标、来源及站点以临时别名表示；不发送真实 IP、域名、原始 URL、账号、日志游标或密钥。</p><details class="security-ai-preview-wrap"><summary>查看将发送的分类证据</summary><pre id="security-ai-preview" class="security-ai-preview"></pre></details><div class="notice neutral">AI 只生成需要复核的策略建议，不改变告警事实，也不执行封禁、配置修改或上游操作。</div><label class="checkbox-line"><input id="security-ai-confirm" type="checkbox" disabled><span>我同意将此预览对应的分类证据发送给当前实例配置的提供方。</span></label><p id="security-ai-dialog-error" class="error" role="alert" hidden></p><div class="dialog-actions"><button class="button" type="button" id="security-ai-cancel">取消</button><button class="button primary" type="button" id="security-ai-send" disabled>发送分类证据并分析</button></div></div></dialog>
+  <dialog id="automatic-recovery-dialog" aria-labelledby="automatic-recovery-dialog-title"><div class="dialog-content"><p class="eyebrow">Review the original transaction</p><h2 id="automatic-recovery-dialog-title">批准这份暂停恢复核验？</h2><div id="automatic-recovery-dialog-summary"></div><div class="notice"><strong>保持原任务、用量与授权边界。</strong><p>本操作只在服务器再次核验通过后解除当前暂停，不安装或重启服务，不重置配额，不启用自动模式。原暂停和恢复审计继续保留。</p></div><label class="checkbox-line"><input id="automatic-recovery-confirm" type="checkbox"><span>我已核对原任务、当前版本和服务证据，批准这份有效核验方案对应的恢复。</span></label><p id="automatic-recovery-dialog-error" class="error" role="alert" hidden></p><div class="dialog-actions"><button class="button" type="button" id="automatic-recovery-cancel">取消</button><button class="button primary" type="button" id="automatic-recovery-execute" disabled>批准这次恢复</button></div></div></dialog>
+</body>
+</html>

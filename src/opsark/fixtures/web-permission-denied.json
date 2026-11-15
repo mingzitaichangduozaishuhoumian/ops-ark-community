@@ -1,0 +1,62 @@
+{
+  "title": "回放：代理日志与容器权限不足",
+  "scenario": "web_502",
+  "host": {
+    "id": "demo-web-01",
+    "name": "web-demo-01",
+    "address": "192.0.2.10",
+    "port": 22,
+    "username": "opsark-readonly",
+    "site_domain": "shop.example.com",
+    "container_name": "api",
+    "expected_upstream_port": 8081,
+    "source": "replay",
+    "health_checks": [
+      {
+        "id": "shop",
+        "domain": "shop.example.com",
+        "port": 80,
+        "path": "/healthz",
+        "expected_status": 200,
+        "expected_body": "ok",
+        "read_only_confirmed": true
+      }
+    ],
+    "nginx_config_path": "/etc/nginx/conf.d/shop.conf"
+  },
+  "checks": [
+    {
+      "name": "os_release",
+      "stdout": "NAME=\"Ubuntu\"\nVERSION_ID=\"24.04\"\nID=ubuntu\n"
+    },
+    {
+      "name": "nginx_status",
+      "stdout": "active\n"
+    },
+    {
+      "name": "nginx_errors",
+      "stdout": "",
+      "status": "permission_denied",
+      "stderr": "Permission denied",
+      "exit_code": 1
+    },
+    {
+      "name": "container_state",
+      "stdout": "",
+      "status": "permission_denied",
+      "stderr": "permission denied while connecting to Docker socket",
+      "exit_code": 1
+    },
+    {
+      "name": "listeners",
+      "stdout": "State Recv-Q Send-Q Local Address:Port Peer Address:Port\nLISTEN 0 511 0.0.0.0:80 0.0.0.0:*\nLISTEN 0 128 127.0.0.1:8081 0.0.0.0:*\n"
+    },
+    {
+      "name": "http_shop",
+      "status": "unavailable",
+      "stdout": "",
+      "stderr": "No simulated site result available",
+      "exit_code": null
+    }
+  ]
+}

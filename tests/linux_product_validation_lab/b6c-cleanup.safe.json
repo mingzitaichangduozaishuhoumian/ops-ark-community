@@ -1,0 +1,11 @@
+{
+  "baseline_unchanged": true,
+  "confirmed": true,
+  "operation": "cleanup",
+  "original_11_safe_records_unchanged": true,
+  "run": "1db61e3aefc36a17",
+  "runtime_image_retained": "sha256:9dc7d70c7b4f06ee294b55deb0bb63c626648d4e386949d24de0260c090fef12",
+  "schema": "opsark-linux-product-host/v1",
+  "stage_and_reports_retained": true,
+  "state": "resources_removed"
+}

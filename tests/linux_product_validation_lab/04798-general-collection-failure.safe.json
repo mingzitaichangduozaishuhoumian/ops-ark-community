@@ -1,0 +1,9 @@
+{
+  "confirmed": false,
+  "failure_code": "test_exit",
+  "operation": "general",
+  "retry_authorized": false,
+  "run": "93070cd9c555c3aa",
+  "schema": "opsark-linux-product-host/v1",
+  "state": "unconfirmed"
+}

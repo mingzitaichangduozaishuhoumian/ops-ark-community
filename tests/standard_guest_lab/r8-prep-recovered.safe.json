@@ -1,0 +1,23 @@
+{
+  "remote_mutations": 0,
+  "remote_status_unchanged": true,
+  "result": {
+    "confirmed": true,
+    "summary": {
+      "business_acceptance": "pending",
+      "docker_rootful": true,
+      "fixture_initial_checks": 3,
+      "guard_installed": false,
+      "network_none_acceptance": false,
+      "package_count": 12,
+      "prepared_canonical_sha256": "9c5efadf40edb838df55b5596d1730cf6656327d074e3e0552dee0c68334ae11",
+      "prepared_valid": true,
+      "private_key_read": false,
+      "product_enrolled": false,
+      "raw_logs_exported": false
+    }
+  },
+  "run": "d653247f0b805727",
+  "status_sha256_after": "5cef2d856b905b2bfe91e90e1c10b9ce20137504ef4f4fbb3766e83255cdf741",
+  "status_sha256_before": "5cef2d856b905b2bfe91e90e1c10b9ce20137504ef4f4fbb3766e83255cdf741"
+}

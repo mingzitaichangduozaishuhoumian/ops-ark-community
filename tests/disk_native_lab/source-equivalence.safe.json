@@ -1,0 +1,11 @@
+{
+  "ast_identical": true,
+  "ast_sha256": "4d50c90b6607fdce782bd877f431946dc249a830fc2e6078b4d0c2d8566d3df8",
+  "changes": "three precise lint comments and one adjacent f-string split",
+  "executed_source_commit": "801fc1c173ba372336f86dc58421e7d0e09ae4e2",
+  "executed_source_sha256": "9cdd0d78e4217b24aa3088313f130fe37062523024875712bbddf8a453516cec",
+  "formatted_source_sha256": "cbf2389abe2722f36592664d8be261fb62a3c1a7f43f1430f3a9ea8173eadc04",
+  "native_rerun": false,
+  "path": "tests/disk_native_lab/native_disk_fixture.py",
+  "schema": "opsark-native-fixture-source-equivalence/v1"
+}

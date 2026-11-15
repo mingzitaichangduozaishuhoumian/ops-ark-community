@@ -1,0 +1,16 @@
+{
+  "receipt": {
+    "datasource_nocloud": true,
+    "exit_code": 2,
+    "modules_final_finished": false,
+    "no_errors": true,
+    "no_recoverable_errors": false,
+    "run": "d653247f0b805727",
+    "schema": "opsark-guest-cloud-init/v1",
+    "state": "unconfirmed"
+  },
+  "remote_mutations": 0,
+  "remote_status_unchanged": true,
+  "status_sha256_after": "5cef2d856b905b2bfe91e90e1c10b9ce20137504ef4f4fbb3766e83255cdf741",
+  "status_sha256_before": "5cef2d856b905b2bfe91e90e1c10b9ce20137504ef4f4fbb3766e83255cdf741"
+}

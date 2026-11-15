@@ -1,0 +1,35 @@
+# Copy to opsark.local.toml and set OPSARK_INVENTORY to its absolute path.
+# Paths are resolved relative to this file. Never commit real keys or local inventory.
+
+[credentials.website_readonly]
+key_file = "/run/secrets/opsark_readonly_key"
+known_hosts_file = "/run/secrets/opsark_known_hosts"
+
+[[hosts]]
+id = "web-01"
+name = "网站主机"
+address = "192.0.2.10"
+port = 22
+username = "opsark-readonly"
+credential = "website_readonly"
+site_domain = "shop.example.com"
+container_name = "api"
+expected_upstream_port = 8081
+
+# Optional: metadata only, not a configuration backup or proof of loaded config.
+# nginx_config_path = "/etc/nginx/conf.d/shop.conf"
+
+# Optional read-only dependency projection; administrator installs a fixed helper
+# and root-owned scope first. Never paste raw Nginx configuration into the console.
+# compose_project = "demo"
+# nginx_dependency_scope_digest = "<independently-checked-64-hex-scope-file-sha256>"
+
+[[hosts.health_checks]]
+id = "shop"
+domain = "shop.example.com"
+port = 80
+path = "/healthz"
+expected_status = 200
+expected_body = "ok"
+# Enable only after the maintainer confirms this exact GET has no business writes.
+read_only_confirmed = false

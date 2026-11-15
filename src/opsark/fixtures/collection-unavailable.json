@@ -1,0 +1,71 @@
+{
+  "title": "回放：主机采集不可用",
+  "scenario": "web_502",
+  "host": {
+    "id": "demo-web-01",
+    "name": "web-demo-01",
+    "address": "192.0.2.10",
+    "port": 22,
+    "username": "opsark-readonly",
+    "site_domain": "shop.example.com",
+    "container_name": "api",
+    "expected_upstream_port": 8081,
+    "source": "replay",
+    "health_checks": [
+      {
+        "id": "shop",
+        "domain": "shop.example.com",
+        "port": 80,
+        "path": "/healthz",
+        "expected_status": 200,
+        "expected_body": "ok",
+        "read_only_confirmed": true
+      }
+    ],
+    "nginx_config_path": "/etc/nginx/conf.d/shop.conf"
+  },
+  "checks": [
+    {
+      "name": "os_release",
+      "stdout": "",
+      "status": "unavailable",
+      "stderr": "SSH collection unavailable; no current host data",
+      "exit_code": null
+    },
+    {
+      "name": "nginx_status",
+      "stdout": "",
+      "status": "unavailable",
+      "stderr": "SSH collection unavailable; no current host data",
+      "exit_code": null
+    },
+    {
+      "name": "nginx_errors",
+      "stdout": "",
+      "status": "unavailable",
+      "stderr": "SSH collection unavailable; no current host data",
+      "exit_code": null
+    },
+    {
+      "name": "container_state",
+      "stdout": "",
+      "status": "unavailable",
+      "stderr": "SSH collection unavailable; no current host data",
+      "exit_code": null
+    },
+    {
+      "name": "listeners",
+      "stdout": "",
+      "status": "unavailable",
+      "stderr": "SSH collection unavailable; no current host data",
+      "exit_code": null
+    },
+    {
+      "name": "http_shop",
+      "status": "unavailable",
+      "stdout": "",
+      "stderr": "No simulated site result available",
+      "exit_code": null
+    }
+  ]
+}

@@ -1,0 +1,48 @@
+{
+  "title": "回放：容量尚有余量但 inode 耗尽",
+  "scenario": "disk",
+  "host": {
+    "id": "demo-web-01",
+    "name": "web-demo-01",
+    "address": "192.0.2.10",
+    "port": 22,
+    "username": "opsark-readonly",
+    "site_domain": "shop.example.com",
+    "container_name": "api",
+    "expected_upstream_port": 8081,
+    "source": "replay",
+    "health_checks": [
+      {
+        "id": "shop",
+        "domain": "shop.example.com",
+        "port": 80,
+        "path": "/healthz",
+        "expected_status": 200,
+        "expected_body": "ok",
+        "read_only_confirmed": true
+      }
+    ]
+  },
+  "checks": [
+    {
+      "name": "os_release",
+      "stdout": "NAME=\"Ubuntu\"\nVERSION_ID=\"24.04\"\nID=ubuntu\n"
+    },
+    {
+      "name": "disk_bytes",
+      "stdout": "Filesystem 1024-blocks Used Available Capacity Mounted on\n/dev/vda1 125829120 44040192 81788928 35% /\n"
+    },
+    {
+      "name": "disk_inodes",
+      "stdout": "Filesystem Inodes IUsed IFree IUse% Mounted on\n/dev/vda1 7864320 7864320 0 100% /\n"
+    },
+    {
+      "name": "disk_directories",
+      "stdout": "4096 /var/log/nginx\n1048576 /srv/site-data\n"
+    },
+    {
+      "name": "http_shop",
+      "stdout": "{\"status\":\"ok\"}\nOPSARK_HTTP_STATUS:200\n"
+    }
+  ]
+}

@@ -1,0 +1,33 @@
+{
+  "claim_present": true,
+  "container_state": "missing",
+  "created_present": true,
+  "read_only": true,
+  "result_verified": true,
+  "run": "29999ece68d41859",
+  "schema": "opsark-disk-native-observation/v1",
+  "scope_present": true,
+  "workers": {
+    "cleanup": {
+      "birth": "706674512",
+      "live": false,
+      "pid": 2670874,
+      "present": false,
+      "same_birth": false
+    },
+    "fixture": {
+      "birth": "706672787",
+      "live": false,
+      "pid": 2670327,
+      "present": false,
+      "same_birth": false
+    },
+    "prepare": {
+      "birth": "706670527",
+      "live": false,
+      "pid": 2670031,
+      "present": false,
+      "same_birth": false
+    }
+  }
+}

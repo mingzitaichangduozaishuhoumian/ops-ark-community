@@ -1,0 +1,25 @@
+{
+  "baseline_unchanged": true,
+  "confirmed": true,
+  "group": "readonly-policy-root",
+  "operation": "root",
+  "original_11_safe_records_unchanged": true,
+  "own_container_removed": true,
+  "result": {
+    "accepted": true,
+    "collection_sha256": "c0a4d349915e14f0636dd8a41b9861acf313efb3a1e83e01af27ad40b3213ed5",
+    "counts": {
+      "errors": 0,
+      "failed": 0,
+      "passed": 1,
+      "skipped": 0
+    },
+    "group": "readonly-policy-root",
+    "phase": "verified",
+    "schema": "opsark-linux-product-native-result/v1",
+    "source_runtime_unchanged": true
+  },
+  "run": "473011255e947889",
+  "schema": "opsark-linux-product-host/v1",
+  "state": "validated"
+}

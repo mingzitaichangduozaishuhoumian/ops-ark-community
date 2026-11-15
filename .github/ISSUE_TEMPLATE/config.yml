@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 私密漏洞报告指南
+    url: https://docs.github.com/en/code-security/how-tos/report-and-fix-vulnerabilities/report-privately
+    about: 在本仓库的 Security and quality 选项卡点击 Report a vulnerability。请将漏洞细节和敏感数据留在私密报告中。

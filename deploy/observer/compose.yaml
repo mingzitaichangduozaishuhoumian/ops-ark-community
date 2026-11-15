@@ -1,0 +1,73 @@
+name: opsark-observer
+
+services:
+  observer:
+    container_name: opsark-observer
+    build:
+      context: ./app
+    labels:
+      io.opsark.observer: v1
+    ports:
+      - "127.0.0.1:18010:8010"
+    environment:
+      OPSARK_DATA_DIR: /app/data
+      OPSARK_INVENTORY: /run/opsark/inventory.toml
+      OPSARK_OBSERVE_ENABLED: "true"
+      OPSARK_OBSERVE_HOSTS: ${OPSARK_OBSERVE_HOSTS:?Set explicit registered observation host IDs}
+      OPSARK_OBSERVE_INTERVAL: ${OPSARK_OBSERVE_INTERVAL:-60}
+      OPSARK_WEB_OBSERVE_ENABLED: ${OPSARK_WEB_OBSERVE_ENABLED:-false}
+      OPSARK_PATCH_INVENTORY: ${OPSARK_PATCH_INVENTORY:-}
+      OPSARK_AUTOMATION_POLICY: ${OPSARK_AUTOMATION_POLICY:-}
+      OPSARK_VULNERABILITY_SCAN_ENABLED: ${OPSARK_VULNERABILITY_SCAN_ENABLED:-false}
+      OPSARK_VULNERABILITY_SCAN_HOSTS: ${OPSARK_VULNERABILITY_SCAN_HOSTS:-}
+      OPSARK_VULNERABILITY_SCAN_INTERVAL: ${OPSARK_VULNERABILITY_SCAN_INTERVAL:-3600}
+      OPSARK_VULNERABILITY_WEBHOOK_URL: ${OPSARK_VULNERABILITY_WEBHOOK_URL:-}
+      OPSARK_VULNERABILITY_WEBHOOK_KEY_FILE: ${OPSARK_VULNERABILITY_WEBHOOK_KEY_FILE:-}
+      OPSARK_AI_PROVIDER: ${OPSARK_AI_PROVIDER:-openai}
+      OPSARK_AI_BASE_URL: ${OPSARK_AI_BASE_URL:-}
+      OPSARK_AI_KEY: ${OPSARK_AI_KEY:-}
+      OPSARK_AI_MODEL: ${OPSARK_AI_MODEL:-}
+      OPSARK_AI_KEY_FILE: ${OPSARK_AI_KEY_FILE:-}
+      OPSARK_AI_RESPONSE_FORMAT: ${OPSARK_AI_RESPONSE_FORMAT:-json_object}
+      OPSARK_AI_TOKEN_LIMIT_PARAMETER: ${OPSARK_AI_TOKEN_LIMIT_PARAMETER:-max_tokens}
+      OPSARK_AI_MAX_OUTPUT_TOKENS: ${OPSARK_AI_MAX_OUTPUT_TOKENS:-2048}
+      OPSARK_AI_THINKING_MODE: ${OPSARK_AI_THINKING_MODE:-provider_default}
+    volumes:
+      - type: bind
+        source: ./data
+        target: /app/data
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ./secrets
+        target: /run/opsark
+        read_only: true
+        bind:
+          create_host_path: false
+    read_only: true
+    tmpfs:
+      - /tmp:size=64m,mode=1777
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    mem_limit: 384m
+    cpus: 0.5
+    pids_limit: 128
+    restart: unless-stopped
+    stop_grace_period: 30s
+    logging:
+      driver: json-file
+      options:
+        max-size: "5m"
+        max-file: "2"
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request; urllib.request.build_opener(urllib.request.ProxyHandler({})).open('http://127.0.0.1:8010/api/status', timeout=3).read()"
+      interval: 30s
+      timeout: 5s
+      start_period: 15s
+      retries: 3

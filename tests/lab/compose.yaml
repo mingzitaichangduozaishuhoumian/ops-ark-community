@@ -1,0 +1,25 @@
+services:
+  target:
+    build:
+      context: .
+      args:
+        OPSARK_LAB_BASE_IMAGE: ${OPSARK_LAB_BASE_IMAGE:-ubuntu:24.04}
+    ports:
+      - "127.0.0.1:${OPSARK_LAB_SSH_PORT:-22220}:22"
+    volumes:
+      - type: bind
+        source: ${OPSARK_LAB_KEY_DIR:?Temporary lab key directory is required}/client_key.pub
+        target: /run/lab/client_key.pub
+        read_only: true
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - >-
+          /usr/sbin/sshd -t &&
+          curl --silent --fail --max-time 2 --noproxy '*' --header 'Host: shop.example.com'
+          http://127.0.0.1:8080/healthz >/dev/null
+      interval: 2s
+      timeout: 3s
+      start_period: 5s
+      retries: 30
+    stop_grace_period: 5s

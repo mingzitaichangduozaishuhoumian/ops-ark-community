@@ -1,0 +1,57 @@
+{
+  "title": "回放：站点上游与容器端口不一致",
+  "scenario": "web_502",
+  "host": {
+    "id": "demo-web-01",
+    "name": "web-demo-01",
+    "address": "192.0.2.10",
+    "port": 22,
+    "username": "opsark-readonly",
+    "site_domain": "shop.example.com",
+    "container_name": "api",
+    "expected_upstream_port": 8081,
+    "source": "replay",
+    "health_checks": [
+      {
+        "id": "shop",
+        "domain": "shop.example.com",
+        "port": 80,
+        "path": "/healthz",
+        "expected_status": 200,
+        "expected_body": "ok",
+        "read_only_confirmed": true
+      }
+    ],
+    "nginx_config_path": "/etc/nginx/conf.d/shop.conf"
+  },
+  "checks": [
+    {
+      "name": "os_release",
+      "stdout": "NAME=\"Ubuntu\"\nVERSION_ID=\"24.04\"\nID=ubuntu\n"
+    },
+    {
+      "name": "nginx_status",
+      "stdout": "active\n"
+    },
+    {
+      "name": "nginx_errors",
+      "stdout": "2026/10/26 14:03:12 [error] 1480#1480: *94 connect() failed (111: Connection refused) while connecting to upstream, client: 198.51.100.20, server: shop.example.com, request: \"GET /healthz HTTP/1.1\", upstream: \"http://127.0.0.1:8080/healthz\", host: \"shop.example.com\"\n"
+    },
+    {
+      "name": "container_state",
+      "stdout": "{\"Name\": \"/api\", \"State\": {\"Status\": \"running\", \"ExitCode\": 0, \"OOMKilled\": false, \"FinishedAt\": \"2026-10-26T06:20:00Z\"}, \"RestartCount\": 0, \"MemoryLimit\": 536870912, \"Ports\": {\"8000/tcp\": [{\"HostIp\": \"127.0.0.1\", \"HostPort\": \"8081\"}]}, \"Image\": \"sha256:adc1928e3d361934194e7b7a1af3656db9cd028478624ba1400a2229c0268ebe\", \"ImageReference\": \"demo/api:1\"}"
+    },
+    {
+      "name": "listeners",
+      "stdout": "State Recv-Q Send-Q Local Address:Port Peer Address:Port\nLISTEN 0 511 0.0.0.0:80 0.0.0.0:*\nLISTEN 0 128 127.0.0.1:8081 0.0.0.0:*\n"
+    },
+    {
+      "name": "nginx_config_hash",
+      "stdout": "f1bb365e6aca9de6e2ea59ad52e3d061e121ef81dac682f9f8dbb4702fa28b9f  /etc/nginx/conf.d/shop.conf\n"
+    },
+    {
+      "name": "http_shop",
+      "stdout": "Bad Gateway\nOPSARK_HTTP_STATUS:502\n"
+    }
+  ]
+}

@@ -1,0 +1,351 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <link rel="icon" href="data:,">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; connect-src 'none'; base-uri 'none'; form-action 'none'">
+  <title>OpsArk · 故障调查流程原型</title>
+  <style>
+    :root { --paper:#f5f5f0; --surface:#fff; --ink:#202b29; --muted:#69756e; --line:#dfe3db; --deep:#172f2b; --deep-ink:#dce7df; --green:#1f654d; --green-soft:#eaf3eb; --amber:#956012; --amber-soft:#fbf0d7; --red:#a83d32; --red-soft:#f8eeea; --mono:'Cascadia Code','IBM Plex Mono',Consolas,monospace; --sans:'MiSans','Noto Sans SC','Microsoft YaHei UI',sans-serif; }
+    * { box-sizing:border-box; }
+    body { margin:0; background:var(--paper); color:var(--ink); font:14px/1.65 var(--sans); }
+    button,input,select { font:inherit; }
+    button,a,input,select { -webkit-tap-highlight-color:transparent; }
+    button { cursor:pointer; }
+    button:disabled { cursor:not-allowed; }
+    button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visible { outline:3px solid #c4953c; outline-offset:3px; }
+    a { color:var(--green); }
+    h1,h2,h3,p { margin:0; }
+    h1 { font-size:28px; line-height:1.4; font-weight:600; letter-spacing:-.7px; }
+    h2 { font-size:18px; font-weight:600; }
+    h3 { font-size:14px; font-weight:600; }
+    small,.small { font-size:12px; }
+    .mono { font-family:var(--mono); font-size:12px; overflow-wrap:anywhere; }
+    .muted { color:var(--muted); }
+    .eyebrow { font:11px/1.5 var(--mono); letter-spacing:1.7px; color:var(--muted); text-transform:uppercase; }
+    .shell { display:grid; grid-template-columns:190px minmax(0,1fr); min-height:100vh; }
+    .sidebar { background:var(--deep); color:var(--deep-ink); padding:30px 18px 22px; display:flex; flex-direction:column; gap:35px; }
+    .brand { display:flex; align-items:center; gap:10px; padding-left:8px; }
+    .brand-mark { display:grid; place-items:center; width:33px; height:33px; border:1px solid #7c9c8b; font:17px var(--mono); color:#e6c276; }
+    .brand-name { font:22px/1 var(--mono); letter-spacing:-1px; color:#f0f5ef; }
+    .brand-note { font-size:10px; color:#a5bbb1; margin-top:6px; letter-spacing:1.5px; }
+    .workspace-label { padding:0 10px; font-size:11px; letter-spacing:1px; color:#a5bbb1; }
+    .project-name { padding:9px 10px 20px; font-size:13px; }
+    .nav-stack { display:grid; gap:6px; }
+    .nav-button { border:0; color:#c6d6cd; text-align:left; background:transparent; padding:11px 12px; border-radius:4px; display:flex; align-items:center; gap:10px; }
+    .nav-button[aria-current="page"] { color:#fbf9ee; background:#2a4740; box-shadow:inset 2px 0 #e0bc71; }
+    .nav-number { font:11px var(--mono); opacity:.65; }
+    .sidebar-bottom { margin-top:auto; padding:16px 10px 0; border-top:1px solid #3a534a; color:#b0c3b8; font-size:11px; }
+    .sidebar-bottom strong { display:block; margin-bottom:5px; font-size:12px; color:#e6eee7; font-weight:500; }
+    .main { min-width:0; }
+    .topbar { min-height:68px; padding:18px 34px; border-bottom:1px solid var(--line); background:#fafbf6; display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap; }
+    .breadcrumb { display:flex; gap:10px; align-items:center; font-size:12px; }
+    .breadcrumb span:first-child { color:var(--muted); }
+    .status { display:inline-flex; align-items:center; gap:6px; padding:3px 8px; background:var(--green-soft); color:var(--green); font-size:11px; font-weight:500; border-radius:3px; }
+    .status::before { content:''; width:5px; height:5px; background:currentColor; border-radius:50%; }
+    .status.amber { background:var(--amber-soft); color:var(--amber); }
+    .status.red { background:var(--red-soft); color:var(--red); }
+    .status.neutral { background:#ecefe9; color:#526058; }
+    .content { padding:26px 34px 34px; max-width:1460px; margin:auto; }
+    .demo-strip { display:flex; align-items:center; gap:10px; margin-bottom:26px; color:#6b694e; font-size:12px; }
+    .demo-tag { font:10px var(--mono); border:1px solid #d2caab; padding:2px 5px; color:#796233; flex-shrink:0; }
+    .page-heading { display:flex; align-items:flex-end; justify-content:space-between; gap:16px; margin-bottom:24px; flex-wrap:wrap; }
+    .page-heading h1 { margin-top:7px; }
+    .page-heading p { margin-top:8px; color:var(--muted); font-size:13px; }
+    .btn { border:1px solid #cdd5cc; background:var(--surface); color:var(--ink); padding:8px 13px; border-radius:4px; display:inline-flex; justify-content:center; align-items:center; gap:7px; min-height:38px; }
+    .btn:hover { background:#f2f5ef; }
+    .btn.primary { background:var(--green); color:#fff; border-color:var(--green); }
+    .btn.primary:hover { background:#18533e; }
+    .btn:disabled { color:#7c837b; background:#eceee8; border-color:#e0e3dc; }
+    .button-row { display:flex; gap:9px; flex-wrap:wrap; align-items:center; }
+    .case-layout { display:grid; grid-template-columns:205px minmax(0,1fr); gap:22px; align-items:start; }
+    .case-list { border-top:1px solid var(--line); }
+    .list-label { display:flex; justify-content:space-between; padding:12px 0; font-size:11px; color:var(--muted); }
+    .case-button { display:block; border:0; border-bottom:1px solid var(--line); background:transparent; padding:15px 13px; text-align:left; width:100%; color:var(--ink); }
+    .case-button[aria-pressed="true"] { background:#e8eee5; box-shadow:inset 2px 0 var(--green); }
+    .case-button:hover { background:#edf0e9; }
+    .case-type { display:flex; align-items:center; gap:7px; font-size:11px; color:var(--muted); }
+    .severity { width:6px; height:6px; background:#bf7650; border-radius:50%; display:inline-block; }
+    .severity.watch { background:#819b80; }
+    .case-button strong { display:block; font-size:13px; margin-top:6px; font-weight:500; }
+    .case-button .mono { display:block; margin-top:4px; color:var(--muted); font-size:10px; }
+    .case-sheet { background:var(--surface); border:1px solid var(--line); min-width:0; }
+    .case-header { padding:25px 25px 19px; }
+    .case-header .eyebrow { letter-spacing:.7px; }
+    .case-title-row { display:flex; justify-content:space-between; gap:12px; align-items:center; margin:9px 0 6px; flex-wrap:wrap; }
+    .case-title-row h2 { font-size:21px; letter-spacing:-.4px; }
+    .case-context { font-size:12px; color:var(--muted); overflow-wrap:anywhere; }
+    .tabs { display:flex; gap:23px; padding:0 25px; border-bottom:1px solid var(--line); flex-wrap:wrap; }
+    .tab { padding:11px 0; background:transparent; border:0; border-bottom:2px solid transparent; color:var(--muted); font-size:12px; }
+    .tab[aria-selected="true"] { border-color:var(--green); color:var(--ink); font-weight:600; }
+    .panel { padding:23px 25px 26px; }
+    .conclusion { border-left:3px solid var(--green); padding-left:15px; margin-bottom:23px; }
+    .conclusion .eyebrow { color:var(--green); margin-bottom:6px; }
+    .conclusion h3 { font-size:17px; line-height:1.7; }
+    .conclusion p { margin-top:7px; font-size:12px; color:var(--muted); }
+    .section-heading { display:flex; align-items:center; justify-content:space-between; gap:10px; margin:23px 0 10px; }
+    .section-heading .mono { color:var(--muted); font-size:10px; }
+    .facts { list-style:none; padding:0; margin:0; }
+    .facts li { display:grid; grid-template-columns:27px minmax(0,1fr) auto; gap:9px; padding:10px 0; border-bottom:1px solid #edf0e9; align-items:start; font-size:12px; }
+    .fact-index { color:#7f8b82; font:11px var(--mono); padding-top:3px; }
+    .evidence-link { border:0; background:#f0f3ed; color:var(--green); padding:2px 5px; border-radius:2px; font:10px/1.7 var(--mono); }
+    .notice { padding:12px 14px; background:var(--amber-soft); border-left:2px solid #cca95e; color:#75511c; font-size:12px; }
+    .notice p + p { margin-top:7px; }
+    .notice.neutral { background:#f0f3ed; color:#526058; border-color:#a1b09f; }
+    .notice-list { padding-left:17px; margin:7px 0 0; }
+    .topology { display:grid; grid-template-columns:1fr 15px 1fr 15px 1fr; gap:7px; align-items:center; padding:15px 0; }
+    .topology-node { min-width:0; border:1px solid var(--line); padding:10px; background:#fbfcf8; }
+    .topology-node small { display:block; color:var(--muted); font-size:10px; margin-bottom:4px; }
+    .topology-node strong { font-size:11px; font-weight:500; display:block; overflow-wrap:anywhere; }
+    .topology-arrow { color:#a3b09f; text-align:center; }
+    .shared-note { font-size:11px; color:var(--muted); }
+    details { border:1px solid var(--line); margin-bottom:10px; }
+    summary { padding:12px 13px; cursor:pointer; font-size:12px; }
+    summary .mono { color:var(--green); margin-right:6px; }
+    .evidence-meta { padding:0 14px 10px; font-size:11px; color:var(--muted); }
+    pre { margin:0; padding:14px; background:#f4f6f0; color:#35473c; white-space:pre-wrap; overflow-wrap:anywhere; font:11px/1.8 var(--mono); border-top:1px solid var(--line); }
+    .data-list { display:grid; grid-template-columns:90px minmax(0,1fr); font-size:12px; margin:15px 0; }
+    .data-list dt,.data-list dd { margin:0; padding:9px 0; border-bottom:1px solid #edf0e9; }
+    .data-list dt { color:var(--muted); }
+    .data-list dd { overflow-wrap:anywhere; }
+    .diff { margin:15px 0; font:11px/1.9 var(--mono); background:#f7f8f3; border:1px solid var(--line); padding:12px 14px; overflow-wrap:anywhere; }
+    .diff .removed { color:#9d4c3e; }
+    .diff .added { color:#296044; }
+    .check-row { display:flex; justify-content:space-between; gap:16px; align-items:start; padding:11px 0; border-bottom:1px solid #edf0e9; font-size:12px; }
+    .check-row p { font-size:11px; color:var(--muted); margin-top:2px; }
+    .panel-actions { margin-top:22px; display:flex; gap:10px; flex-wrap:wrap; }
+    .endnote { margin-top:16px; font-size:11px; color:var(--muted); overflow-wrap:anywhere; }
+    .sr-only { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip-path:inset(50%); white-space:nowrap; border:0; }
+    [hidden] { display:none !important; }
+    .steps { display:flex; gap:0; margin-bottom:25px; border-bottom:1px solid var(--line); }
+    .step { padding:12px 17px 12px 0; margin-right:20px; font-size:12px; color:var(--muted); border-bottom:2px solid transparent; }
+    .step.active { color:var(--green); border-color:var(--green); }
+    .step span { font:11px var(--mono); margin-right:7px; }
+    .form-sheet { max-width:840px; background:var(--surface); border:1px solid var(--line); padding:28px; }
+    .form-sheet h2 { margin-bottom:7px; }
+    .form-sheet > p { color:var(--muted); font-size:12px; }
+    .fields { display:grid; grid-template-columns:1fr 1fr; gap:18px; margin:24px 0; }
+    .field { display:grid; gap:7px; min-width:0; font-size:12px; }
+    .field input,.field select { width:100%; min-width:0; background:#fcfdf9; border:1px solid #cdd5ca; border-radius:3px; padding:9px 10px; color:var(--ink); }
+    .field.full { grid-column:1/-1; }
+    .checkbox-line { display:flex; align-items:flex-start; gap:9px; font-size:12px; margin:16px 0; cursor:pointer; }
+    .checkbox-line input { width:16px; height:16px; margin:3px 0 0; accent-color:var(--green); flex-shrink:0; }
+    .form-actions { padding-top:20px; border-top:1px solid var(--line); display:flex; gap:10px; flex-wrap:wrap; }
+    .form-result { margin-bottom:18px; }
+    .error { color:var(--red); font-size:12px; margin:12px 0; }
+    .policy-layout { display:grid; grid-template-columns:minmax(0,1fr) minmax(240px,.7fr); gap:20px; align-items:start; }
+    .policy-sheet { background:var(--surface); border:1px solid var(--line); padding:25px; }
+    .policy-controls { margin-top:18px; }
+    .policy-decision { margin-top:20px; padding:16px; background:var(--amber-soft); color:#74521d; }
+    .policy-decision strong { display:block; margin-bottom:5px; }
+    .policy-decision p { font-size:12px; }
+    .policy-decision.pass { background:var(--green-soft); color:var(--green); }
+    .scope-label { font-size:11px; color:var(--muted); margin-top:13px; }
+    footer { padding-top:24px; color:#798378; font:10px var(--mono); letter-spacing:.3px; display:flex; gap:15px; justify-content:space-between; flex-wrap:wrap; }
+    @media(min-width:1450px) { .content { padding-top:36px; } .case-layout { grid-template-columns:230px minmax(0,1fr); gap:28px; } .case-header,.panel { padding-left:32px; padding-right:32px; } .tabs { padding-left:32px; } }
+    @media(max-width:1050px) { .shell { grid-template-columns:160px minmax(0,1fr); } .sidebar { padding-left:12px; padding-right:12px; } .topbar { padding:16px 23px; } .content { padding:23px; } .case-layout { grid-template-columns:175px minmax(0,1fr); gap:16px; } .case-header,.panel { padding:20px; } .tabs { padding:0 20px; gap:19px; } .policy-layout { grid-template-columns:1fr; } }
+    @media(max-width:800px) { .shell { grid-template-columns:1fr; } .sidebar { padding:15px 20px; flex-direction:row; flex-wrap:wrap; justify-content:space-between; gap:15px; align-items:center; } .brand-note,.workspace-label,.project-name,.sidebar-bottom { display:none; } .nav-stack { display:flex; gap:4px; } .nav-button { padding:9px; font-size:12px; } .nav-number { display:none; } .brand-name { font-size:20px; } .brand-mark { width:28px; height:28px; } .sidebar-middle { margin-left:auto; } .case-layout { grid-template-columns:1fr; } .case-list { display:grid; grid-template-columns:1fr 1fr; } .list-label { grid-column:1/-1; } .case-button { border:1px solid var(--line); margin-top:-1px; } .case-button .mono { font-size:10px; } .page-heading h1 { font-size:25px; } .demo-strip { margin-bottom:20px; } }
+    @media(max-width:480px) { .sidebar { padding:13px 15px; gap:12px; } .brand { padding:0; } .sidebar-middle { width:100%; margin:0; } .nav-stack { justify-content:space-between; } .nav-button { flex:1; justify-content:center; } .topbar { padding:12px 16px; gap:8px; } .content { padding:19px 15px; } .page-heading { align-items:flex-start; } .page-heading h1 { font-size:23px; } .case-header,.panel { padding:18px 15px; } .tabs { gap:17px; padding:0 15px; } .tab { font-size:11px; } .facts li { grid-template-columns:20px minmax(0,1fr); } .facts .evidence-link { grid-column:2; justify-self:start; } .topology { grid-template-columns:1fr; gap:4px; } .topology-arrow { transform:rotate(90deg); } .topology-node { padding:8px 10px; } .fields { grid-template-columns:1fr; gap:15px; } .form-sheet,.policy-sheet { padding:20px 16px; } .steps { gap:10px; } .step { margin:0; padding-right:0; flex:1; font-size:11px; } .step span { margin-right:3px; } .data-list { grid-template-columns:70px minmax(0,1fr); } .check-row { gap:8px; } .check-row .status { flex-shrink:0; } }
+    @media(prefers-reduced-motion:no-preference) { .nav-button,.btn,.case-button { transition:background .15s ease; } }
+    @media(pointer:coarse) { .btn,.nav-button,.tab { min-height:44px; } .evidence-link { min-height:32px; } .field input,.field select { font-size:16px; } }
+  </style>
+</head>
+<body>
+<div class="shell">
+  <aside class="sidebar" aria-label="主导航">
+    <div class="brand"><div class="brand-mark" aria-hidden="true">↗</div><div><div class="brand-name">ops/ark</div><div class="brand-note">OPERATIONS, WITH EVIDENCE</div></div></div>
+    <div class="sidebar-middle"><div class="workspace-label">演示工作空间</div><div class="project-name">北岸工作室 / Demo</div><nav class="nav-stack">
+      <button type="button" class="nav-button" data-view="incidents" aria-current="page"><span class="nav-number">01</span>事件工作台</button>
+      <button type="button" class="nav-button" data-view="onboarding"><span class="nav-number">02</span>接入网站</button>
+      <button type="button" class="nav-button" data-view="policy"><span class="nav-number">03</span>授权策略</button>
+    </nav></div>
+    <div class="sidebar-bottom"><strong>有证据，才有下一步。</strong>只读调查 · 安全观察<br>流程原型 / 2026.10</div>
+  </aside>
+  <div class="main">
+    <header class="topbar"><div class="breadcrumb"><span>北岸工作室</span><span aria-hidden="true">/</span><strong id="view-name">事件工作台</strong></div><div class="button-row"><span id="onboard-status" class="small muted">使用预置网站</span><span class="status">观察模式 · 演示</span></div></header>
+    <main class="content">
+      <div class="demo-strip"><span class="demo-tag">PROTOTYPE</span><span>全部为虚构演示数据，未连接服务器，未执行处置。</span></div>
+      <section id="view-incidents" aria-label="事件工作台">
+        <div class="page-heading"><div><div class="eyebrow">Incident workspace</div><h1>先看证据，再做决定。</h1><p>把网站异常、依赖和恢复结果放在同一条时间线上。</p></div><button type="button" class="btn" id="download-report">↓ 下载演示摘要</button></div>
+        <div class="case-layout">
+          <div class="case-list" aria-label="演示事件"><div class="list-label"><span>演示事件</span><span class="mono">04</span></div>
+            <button type="button" class="case-button" data-scenario="web" aria-pressed="true"><span class="case-type"><i class="severity" aria-hidden="true"></i>网站不可用</span><strong>商城返回 502</strong><span class="mono">shop.example.com</span></button>
+            <button type="button" class="case-button" data-scenario="disk" aria-pressed="false"><span class="case-type"><i class="severity" aria-hidden="true"></i>资源异常</span><strong>磁盘可用空间不足</strong><span class="mono">web-demo-01 / rootfs</span></button>
+            <button type="button" class="case-button" data-scenario="container" aria-pressed="false"><span class="case-type"><i class="severity" aria-hidden="true"></i>容器异常</span><strong>api 容器反复重启</strong><span class="mono">compose / api</span></button>
+            <button type="button" class="case-button" data-scenario="ssh" aria-pressed="false"><span class="case-type"><i class="severity watch" aria-hidden="true"></i>安全观察</span><strong>SSH 登录失败聚集</strong><span class="mono">203.0.113.77 → :22</span></button>
+          </div>
+          <article class="case-sheet"><header class="case-header"><div class="eyebrow" id="case-id">DEMO-502-001 · 虚构样例</div><div class="case-title-row"><h2 id="case-title">商城返回 502</h2><span class="status amber" id="case-status">待人工处置</span></div><p class="case-context" id="case-context"></p></header>
+            <div class="tabs" role="tablist" aria-label="事件详情">
+              <button type="button" class="tab" id="tab-summary" role="tab" aria-controls="case-panel" aria-selected="true" data-tab="summary">调查结论</button>
+              <button type="button" class="tab" id="tab-evidence" role="tab" aria-controls="case-panel" aria-selected="false" data-tab="evidence" tabindex="-1">证据记录</button>
+              <button type="button" class="tab" id="tab-action" role="tab" aria-controls="case-panel" aria-selected="false" data-tab="action" tabindex="-1">处置预览</button>
+              <button type="button" class="tab" id="tab-verify" role="tab" aria-controls="case-panel" aria-selected="false" data-tab="verify" tabindex="-1">恢复验收</button>
+            </div><div id="case-panel" class="panel" role="tabpanel" aria-labelledby="tab-summary"></div>
+          </article>
+        </div>
+      </section>
+      <section id="view-onboarding" aria-label="接入网站" hidden>
+        <div class="page-heading"><div><div class="eyebrow">Connect a website</div><h1>从一个网站开始。</h1><p>确认主机与依赖，再约定什么叫恢复。</p></div></div>
+        <div class="steps" aria-label="接入步骤"><div class="step active" data-step="0"><span>01</span>登记主机</div><div class="step" data-step="1"><span>02</span>确认依赖</div><div class="step" data-step="2"><span>03</span>设置验收</div></div>
+        <div class="form-sheet">
+          <form id="host-form"><h2>登记演示主机</h2><p class="small muted">只使用示例地址与凭据引用，不填写真实密钥或密码。</p><div class="fields">
+            <label class="field">客户或项目<input id="project-name" name="project" required value="北岸工作室 / Demo" maxlength="80"></label>
+            <label class="field">主机别名<input id="host-name" name="host" required value="web-demo-01" maxlength="80"></label>
+            <label class="field">SSH 地址<input id="host-address" name="address" required value="192.0.2.10" maxlength="120" autocomplete="off"></label>
+            <label class="field">SSH 端口<input id="host-port" name="port" required type="number" min="1" max="65535" value="22"></label>
+            <label class="field">专用账号<input id="host-user" name="user" required value="opsark-readonly" maxlength="80" autocomplete="off"></label>
+            <label class="field">凭据引用<input id="key-ref" name="keyref" required value="demo-key-reference" maxlength="80" autocomplete="off"></label>
+          </div><div class="form-result notice neutral" id="connection-result" role="status" hidden>演示检查完成：预置场景可读取 Nginx 状态、端口与容器摘要。缺少历史配置快照和完整登录记录。未发起网络连接。</div><p id="host-error" class="error" role="alert" hidden></p><div class="form-actions"><button type="button" class="btn" id="simulate-connection">演示连接检查</button><button type="submit" class="btn primary" id="host-next" disabled>下一步：确认依赖 →</button></div></form>
+          <div id="dependency-step" hidden><h2>确认网站的实际依赖</h2><p class="small muted">以下关系来自预置样例，需要维护者确认后才进入验收设置。</p><div class="topology"><div class="topology-node"><small>域名</small><strong>shop.example.com</strong></div><span class="topology-arrow" aria-hidden="true">→</span><div class="topology-node"><small>宿主机 Nginx</small><strong>127.0.0.1:8080</strong></div><span class="topology-arrow" aria-hidden="true">→</span><div class="topology-node"><small>Compose 服务</small><strong>api · 发布端口 8081</strong></div></div><div class="notice">映射不一致：Nginx 上游是 8080，容器当前发布端口是 8081。blog.example.com 共享此 Nginx，必须纳入影响检查。</div><label class="checkbox-line"><input type="checkbox" id="confirm-dependencies"><span>我已理解并确认以上演示依赖，包括共享 Nginx 的博客站点。</span></label><div class="form-actions"><button type="button" class="btn" id="back-to-host">← 登记主机</button><button type="button" class="btn primary" id="dependency-next" disabled>下一步：设置验收 →</button></div></div>
+          <form id="check-form" hidden><h2>约定网站恢复的检查方式</h2><p class="small muted">首版自动检查采用无业务写入的探测；登录、下单和支付另行设计。</p><div class="fields"><label class="field full">只读检查地址<input id="check-url" name="url" required type="url" value="https://shop.example.com/healthz"></label><label class="field">预期 HTTP 状态<select id="expected-status"><option>200</option><option>204</option></select></label><label class="field">演示观察窗口<select id="check-window"><option>5 分钟（仅示例）</option><option>10 分钟（仅示例）</option></select></label><label class="field full">正文包含（按字面匹配，可留空）<input id="expected-body" name="expectedBody" value="ok" maxlength="120"></label></div><div class="notice neutral">初始模式：只读诊断 + 安全观察。实际业务登录、回调与持续观察均未验证。预置检查结果仅覆盖商店 /healthz，其他地址显示为未覆盖。</div><label class="checkbox-line"><input id="confirm-observation" type="checkbox" required><span>已理解该流程只完成演示接入，未连接主机、授权操作或启用封禁。</span></label><p id="check-error" class="error" role="alert" hidden></p><div class="form-actions"><button type="button" class="btn" id="back-to-dependencies">← 确认依赖</button><button type="submit" class="btn primary">完成演示接入 →</button></div></form>
+        </div>
+      </section>
+      <section id="view-policy" aria-label="授权策略" hidden>
+        <div class="page-heading"><div><div class="eyebrow">Policy review</div><h1>让权限有明确的边界。</h1><p>切换评审条件，查看同一个事件为什么可以或不可以进入执行队列。</p></div></div>
+        <div class="policy-layout"><div class="policy-sheet"><h2>SSH 短时来源封禁 · 策略示例</h2><p class="scope-label">评审场景：DEMO-SSH-001 / 来源 203.0.113.77。下列勾选是假设条件，不是该事件已取得的证据或真实授权。</p><div class="fields"><label class="field full">查看模式<select id="policy-mode"><option value="observe">观察模式：只记录建议</option><option value="preauth">预授权防御：评审示例</option></select></label></div><div class="policy-controls"><label class="checkbox-line"><input id="policy-trusted" type="checkbox" checked><span>来源经过可信采集路径确认</span></label><label class="checkbox-line"><input id="policy-in-scope" type="checkbox" checked><span>目标在示例授权的主机与端口范围内</span></label><label class="checkbox-line"><input id="policy-management" type="checkbox"><span>来源属于受保护的管理地址</span></label><label class="checkbox-line"><input id="policy-expired" type="checkbox"><span>示例授权已经过期</span></label></div><div id="policy-result" class="policy-decision" role="status" aria-live="polite"></div><p class="endnote">所有判断均为本地模拟，不保存授权，不执行封禁；当前演示工作空间仍处于观察模式。</p></div><div class="policy-sheet"><div class="eyebrow">Example policy</div><dl class="data-list"><dt>目标</dt><dd>web-demo-01 / TCP 22</dd><dt>规则</dt><dd>已验证的 SSH 暴力登录规则</dd><dt>动作</dt><dd>临时封禁单个来源</dd><dt>期限</dt><dd>10 分钟（示例参数）</dd><dt>数量上限</dt><dd>20 个来源（示例参数）</dd><dt>管理地址</dt><dd class="mono">203.0.113.10</dd><dt>撤销</dt><dd>本地到期撤销 / 人工撤销单条动作</dd></dl><div class="notice neutral">隔离主机、停止容器、全局防火墙修改和凭据轮换，进入逐次审批流程。</div></div></div>
+      </section>
+      <footer><span>OPSARK / DESIGN STUDY 001</span><span>演示数据 · 不代表真实诊断或防护效果</span></footer>
+      <p id="announcement" class="sr-only" role="status" aria-live="polite"></p>
+    </main>
+  </div>
+</div>
+<script>
+(() => {
+  'use strict';
+  const $ = id => document.getElementById(id);
+  const esc = value => String(value).replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
+  const cases = {
+    web:{
+      id:'DEMO-502-001',title:'商城返回 502',status:'待补充前置条件',context:'shop.example.com · web-demo-01 · SITE-DEMO-01',
+      lead:'上游端口不一致，是当前最值得核实的原因。',interpretation:'Nginx 请求 8080，api 当前发布端口为 8081。样本支持端口不一致的候选原因，但尚不能确定哪个端口符合预期部署设计。',
+      facts:[['Nginx 错误片段显示，连接 127.0.0.1:8080 被拒绝。','E-502-02'],['api 预置状态为运行，宿主端口映射到 8081。','E-502-03'],['直接检查 8081 的健康接口，在样例中返回 200。','E-502-04']],
+      missing:['缺少上次已验收生效的 Nginx 配置，无法建立可靠回退点。','未取得完整部署记录、预期端口和配置归属，不能断言何时由谁修改。','未检查登录、下单或支付，不能推断这些业务已恢复。'],
+      evidence:[
+        ['E-502-01','站点只读检查','14:03:00 · HTTP 检查 · 演示片段','shop.example.com/healthz: 502\nblog.example.com/: 200\nresult_type: simulated'],
+        ['E-502-02','Nginx 上游连接失败','14:03:12 · Nginx 错误日志 · 演示片段','connect() failed (111: Connection refused) while connecting to upstream\nserver: shop.example.com\nupstream: http://127.0.0.1:8080/healthz'],
+        ['E-502-03','api 当前端口映射','14:03:20 · Compose 服务摘要 · 演示片段','service: api\nstate: running\nports: 127.0.0.1:8081 -> 8000/tcp\nsource: synthetic fixture'],
+        ['E-502-04','直接上游健康检查','14:03:26 · 无业务写入的 HTTP 检查 · 演示片段','target: http://127.0.0.1:8081/healthz\nstatus: 200\nbody: {"status":"ok"}\nresult_type: simulated'],
+        ['E-502-05','配置与基线覆盖缺口','14:03:35 · 配置登记 · 演示片段','candidate_upstream: 127.0.0.1:8080\nlast_verified_config: unavailable\nconfiguration_owner: unconfirmed']
+      ],
+      action:'核实预期上游，再生成配置与重载方案',target:'web-demo-01 / shop.example.com 的站点配置',impact:'shop.example.com；blog.example.com 共享 Nginx，需同时检查',block:'缺少上次已验收生效的配置回退版本；预期端口、共享依赖与配置归属尚未全部确认，拟修改配置的语法预检未执行。',
+      checks:[['商城只读健康接口','HTTP 200，正文含 ok（独立的验收展示样例）','初步通过'],['共享博客访问','200（独立的验收展示样例）','初步通过'],['新增代理错误','虚构验收窗口未出现新增错误','示例结果'],['观察窗口','尚未完成预设观察时长','待观察'],['登录、下单与支付','未配置独立业务测试','未覆盖']]
+    },
+    disk:{
+      id:'DEMO-DISK-001',title:'磁盘可用空间不足',status:'仅调查与建议',context:'web-demo-01 · rootfs · 虚构容量样例',lead:'根分区占用偏高，需要先区分日志和业务数据。',interpretation:'一次目录快照不能证明增长来源。候选清理对象需要确认保留策略、文件句柄和实际可释放空间。',
+      facts:[['根分区容量约 120 GiB，已用约 118 GiB，可用约 2 GiB。','E-DISK-01'],['数据库数据约 70 GiB，日志约 22 GiB，占用性质不同。','E-DISK-03'],['没有历史快照和删除后仍开放的文件信息。','E-DISK-05']],
+      missing:['没有增长历史，不能断言日志是最近增长的主要来源。','约 8 GiB 历史归档仅为候选对象，保留与备份要求尚未确认。','文件逻辑大小不等于实际释放空间，需要重新检查文件系统。'],
+      evidence:[
+        ['E-DISK-01','文件系统容量','14:10:00 · 文件系统摘要 · 演示近似值','filesystem: rootfs\nsize_gib: 120\nused_gib: 118\navailable_gib: 2\nresult_type: simulated'],
+        ['E-DISK-02','inode 使用情况','14:10:08 · inode 摘要 · 演示片段','inode_used_percent: 41\ninode_exhaustion: not_observed_in_sample'],
+        ['E-DISK-03','目录分类快照','14:10:30 · 有界目录占用摘要 · 演示近似值','database_data: 70 GiB\nimages_and_related: 20 GiB\nlogs: 22 GiB\nother: 6 GiB'],
+        ['E-DISK-04','历史归档候选','14:10:42 · 日志清单与保留配置 · 演示片段','candidate_archives_logical_size_gib: 8\nretention_policy: unconfirmed\nactual_reclaimable_space: unknown'],
+        ['E-DISK-05','采集覆盖缺口','14:10:50 · 历史登记 · 演示片段','historical_usage: unavailable\nopen_deleted_files: not_collected']
+      ],
+      action:'审核日志保留与轮转，生成候选清理清单',target:'web-demo-01 / 已确认历史日志归档候选',impact:'日志保留与排查证据；不涉及数据库和持久化卷删除',block:'保留与备份要求、实际空间占用尚未确认；第一阶段只交付建议，不实施删除。',
+      checks:[['根分区可用空间','尚未实施清理，无变化可验证','待检查'],['已删除文件句柄','尚未取得','未覆盖'],['目录分类与保留策略','需要维护者确认','待确认'],['目标站点健康','200（独立展示样例），不代表容量问题已解决','示例结果']]
+    },
+    container:{
+      id:'DEMO-CTR-001',title:'api 容器反复重启',status:'原因尚未确定',context:'web-demo-01 · shop-demo / api · 虚构重启样例',lead:'已看到反复重启，尚不足以确认由内存不足导致。',interpretation:'退出码 137 不能单独证明 OOM。还需要容器状态、内核记录、应用日志和依赖状态；当前证据不足以可靠排序候选原因。',
+      facts:[['api 在样例的 10 分钟窗口中重启 6 次，最近退出码为 137。','E-CTR-01'],['内存限制样例为 512 MiB，内存终止标记不可用。','E-CTR-02'],['对应时间的内核记录因权限不足而未取得。','E-CTR-04']],
+      missing:['缺少对应时间的内核事件、历史资源曲线和退出信号来源。','应用日志中的数据库超时需要与依赖状态关联，不能直接认定根因。','没有配置与人工操作历史，业务影响仍需补齐。'],
+      evidence:[
+        ['E-CTR-01','退出与重启事件','14:20:00 · 容器事件 · 演示片段','service: api\nwindow: 10 minutes\nrestart_events: 6\nlast_exit_code: 137'],
+        ['E-CTR-02','资源限制与状态','14:20:10 · 容器状态摘要 · 演示片段','memory_limit_mib: 512\nOOMKilled: unavailable'],
+        ['E-CTR-03','应用日志覆盖','14:20:18 · 脱敏应用日志 · 演示片段','event: database_connection_timeout\nlog_window: incomplete\nroot_cause: unconfirmed'],
+        ['E-CTR-04','内核证据缺失','14:20:30 · 采集状态 · 演示片段','kernel_event_read: permission_denied\nreason: insufficient_read_scope\nconclusion: memory_cause_unconfirmed'],
+        ['E-CTR-05','配置与部署覆盖','14:20:38 · 历史登记 · 演示片段','historical_resources: unavailable\noperator_actions: unavailable\nconfirmed_deployment_diff: unavailable']
+      ],
+      action:'补齐退出上下文，评估资源或应用异常',target:'web-demo-01 / Compose 项目 shop-demo / 服务 api',impact:'商城及依赖 api 的服务；重启可能丢失内存状态',block:'终止原因、依赖状态和数据影响未确认。重启、改内存限制或重建容器需要单独方案与审批。',
+      checks:[['重启频率','后续窗口尚未采集','待检查'],['OOM 或外部终止证据','权限缺口尚未补齐','未覆盖'],['api 健康接口','需要连续检查','待观察'],['应用业务请求','尚未取得','未覆盖']]
+    },
+    ssh:{
+      id:'DEMO-SSH-001',title:'SSH 登录失败聚集',status:'安全观察中',context:'203.0.113.77 → web-demo-01:22 · 虚构安全事件',lead:'存在暴力登录尝试线索，不能据此认定已成功入侵。',interpretation:'来源在 10 分钟样例内发生 48 次失败登录。成功记录覆盖不完整，还需排查错误配置的合法任务；当前仅记录事件与拟议动作。',
+      facts:[['预置日志记录同一来源在 10 分钟内 48 次失败。','E-SSH-01'],['示例检测规则产生暴力登录尝试告警。','E-SSH-02'],['成功登录记录不完整，尚无法排除或证明成功登录。','E-SSH-03']],
+      missing:['需要补齐完整认证记录、受影响账号、授权任务与管理员会话。','当前是观察模式，OpsArk 未新增封禁规则。','拟议动作需先验证来源、管理地址保护和本地撤销路径。'],
+      evidence:[
+        ['E-SSH-01','失败登录聚合','14:30:00 · SSH 认证记录 · 演示片段','source: 203.0.113.77\nwindow: 10 minutes\nfailed_attempts: 48\nresult_type: simulated'],
+        ['E-SSH-02','检测规则告警','14:30:08 · 防护组件事件 · 演示片段','scenario: ssh_bruteforce_demo\nclassification: attack_attempt\nsource_field: direct_ssh_connection'],
+        ['E-SSH-03','成功登录覆盖缺口','14:30:18 · 采集状态 · 演示片段','successful_login_records: incomplete\nintrusion_status: undetermined'],
+        ['E-SSH-04','模式与动作登记','14:30:25 · 防护模式 · 演示片段','opsark_mode: observe\nopsark_actions_executed: 0\nexternal_actions: recorded_separately'],
+        ['E-SSH-05','管理通道登记','14:30:30 · 白名单登记 · 演示片段','management_source: 203.0.113.10\nsource_verification: pending\nrecovery_path: unverified']
+      ],
+      action:'记录短时封禁建议，补齐登录证据',target:'203.0.113.77 / web-demo-01 / TCP 22',impact:'需核实共享出口、管理地址和可信来源；示例期限 10 分钟',block:'观察模式不执行封禁。原有防护动作须单独归档，不能计为 OpsArk 执行。',
+      checks:[['失败登录事件','已聚合（模拟），不证明入侵成功','示例结果'],['OpsArk 新增封禁','0；观察模式保持不变','未执行'],['成功登录调查','记录覆盖仍不完整','未覆盖'],['阻断效果与到期解封','本例未实施阻断','不适用']]
+    }
+  };
+  const state = {scenario:'web',tab:'summary',verified:new Set(),connection:false,step:0,connected:false,health:{url:'https://shop.example.com/healthz',status:'200',body:'ok',window:'5 分钟（仅示例）'}};
+  const viewNames = {incidents:'事件工作台',onboarding:'接入网站',policy:'授权策略'};
+  function announce(text) { $('announcement').textContent=text; }
+  function showView(view) {
+    for (const key of Object.keys(viewNames)) $('view-'+key).hidden=key!==view;
+    document.querySelectorAll('[data-view]').forEach(button => { if(button.dataset.view===view) button.setAttribute('aria-current','page'); else button.removeAttribute('aria-current'); });
+    $('view-name').textContent=viewNames[view];
+    announce('已切换到'+viewNames[view]+'，当前为虚构演示。');
+  }
+  function showStep(step) {
+    state.step=step;
+    ['host-form','dependency-step','check-form'].forEach((id,index)=>$(id).hidden=index!==step);
+    document.querySelectorAll('[data-step]').forEach(item=>item.classList.toggle('active',Number(item.dataset.step)===step));
+  }
+  function topology() { return '<div class="topology"><div class="topology-node"><small>网站</small><strong>shop.example.com</strong></div><span class="topology-arrow" aria-hidden="true">→</span><div class="topology-node"><small>宿主机 Nginx</small><strong>上游 127.0.0.1:8080</strong></div><span class="topology-arrow" aria-hidden="true">→</span><div class="topology-node"><small>Compose / api</small><strong>当前发布端口 8081</strong></div></div><p class="shared-note">关联影响：blog.example.com 与商城共享 Nginx。映射为演示样例，未经真实采集。</p>'; }
+  function renderSummary(data) {
+    return '<div class="conclusion"><div class="eyebrow">候选判断 / 不是已证实根因</div><h3>'+esc(data.lead)+'</h3><p>'+esc(data.interpretation)+'</p></div><div class="section-heading"><h3>已知事实</h3><span class="mono">'+String(data.facts.length).padStart(2,'0')+' EVIDENCE REFERENCES</span></div><ol class="facts">'+data.facts.map((fact,index)=>'<li><span class="fact-index">0'+(index+1)+'</span><span>'+esc(fact[0])+'</span><button type="button" class="evidence-link" data-evidence="'+esc(fact[1])+'" aria-label="查看证据 '+esc(fact[1])+'">'+esc(fact[1])+' ↗</button></li>').join('')+'</ol>'+(state.scenario==='web'?'<div class="section-heading"><h3>网站与依赖</h3><span class="mono">SHARED NGINX</span></div>'+topology():'')+'<div class="section-heading"><h3>继续处理前，还缺什么</h3></div><div class="notice"><ul class="notice-list">'+data.missing.map(item=>'<li>'+esc(item)+'</li>').join('')+'</ul></div><div class="panel-actions"><button type="button" class="btn primary" data-open-tab="action">查看处置方案 →</button><button type="button" class="btn" data-open-tab="evidence">展开原始证据</button></div>';
+  }
+  function renderEvidence(data) { return '<div class="notice neutral" style="margin-bottom:17px">以下片段全部为虚构数据，时间均为示例，未采集真实服务器。缺失信息不等同于正常。</div>'+data.evidence.map(e=>'<details id="'+esc(e[0])+'"><summary><span class="mono">'+esc(e[0])+'</span>'+esc(e[1])+'</summary><div class="evidence-meta">'+esc(e[2])+' · 2026-10-26 / UTC+08:00</div><pre>'+esc(e[3])+'</pre></details>').join(''); }
+  function renderAction(data) { return '<div class="section-heading" style="margin-top:0"><h3>'+esc(data.action)+'</h3><span class="status amber">仅预览</span></div><dl class="data-list"><dt>目标</dt><dd>'+esc(data.target)+'</dd><dt>影响范围</dt><dd>'+esc(data.impact)+'</dd><dt>方案状态</dt><dd>建议草案，尚未执行或取得实际授权</dd></dl>'+(state.scenario==='web'?'<h3>拟议差异 · 待核实具体配置位置</h3><div class="diff"><div class="removed">− proxy_pass http://127.0.0.1:8080;</div><div class="added">+ proxy_pass http://127.0.0.1:8081;</div></div>':'')+'<div class="notice"><strong>执行停止原因</strong><p>'+esc(data.block)+'</p></div><div class="panel-actions"><button type="button" class="btn" disabled>执行不可用</button><button type="button" class="btn primary" data-open-tab="verify">查看验收样例 →</button></div><p class="endnote">高影响动作逐次审批；授权必须绑定对象与当前方案。原型不会执行任何操作。</p>'; }
+  function renderVerify(data) {
+    const demonstrated=state.verified.has(state.scenario);
+    const checks=data.checks.map(check=>[...check]);
+    let expectation='';
+    if(state.scenario==='web') {
+      const match=state.health.status==='200' && '{"status":"ok"}'.includes(state.health.body);
+      checks[0]=state.health.url==='https://shop.example.com/healthz'?['商城只读健康接口','样例结果：HTTP 200，正文 {"status":"ok"}；按登记条件对照',match?'初步通过':'未通过']:['商城只读健康接口','该地址没有预置演示结果，未发起检查','未覆盖'];
+      checks[3]=['观察窗口','尚未完成 '+state.health.window,'待观察'];
+      expectation='<p class="endnote">登记条件：'+esc(state.health.url)+' · HTTP '+esc(state.health.status)+' · 正文包含 '+esc(state.health.body||'（不检查正文）')+'</p>';
+    }
+    return '<div class="notice '+(demonstrated?'':'neutral')+'"><strong>'+(demonstrated?'模拟检查结果 · 不代表真实恢复':'尚未取得真实验收结果')+'</strong><p>'+(demonstrated?(state.scenario==='web'?'以下为独立的验收展示样例，不表示当前事件已处置。按登记条件显示逐项结果；观察未完成，未达到“已验收”。':'仅展示预置检查片段，保留未执行、未覆盖和待观察项目。'):'当前没有实际处置或网络检查。可以展开一份预置样例，查看验收应该如何记录。')+'</p></div>'+expectation+'<div class="section-heading"><h3>验收清单</h3><span class="mono">'+(demonstrated?'SIMULATED RESULTS':'NOT RUN')+'</span></div>'+checks.map(check=>'<div class="check-row"><div><strong>'+esc(check[0])+'</strong><p>'+esc(demonstrated?check[1]:'等待采集；本原型不执行检查')+'</p></div><span class="status '+(demonstrated&&check[2]==='初步通过'?'':demonstrated&&check[2]==='未通过'?'red':'neutral')+'">'+esc(demonstrated?check[2]:'未执行')+'</span></div>').join('')+'<div class="panel-actions"><button type="button" class="btn primary" id="demo-checks">'+(demonstrated?'收起演示结果':'演示检查结果')+'</button><button type="button" class="btn" data-open-tab="summary">返回调查结论</button></div><p class="endnote">一次 HTTP 200 不代表完整业务恢复；未验证的登录、下单与回调均保留为未覆盖。</p>';
+  }
+  function renderCase() {
+    const data=cases[state.scenario];
+    $('case-id').textContent=data.id+' · 虚构样例'; $('case-title').textContent=data.title; $('case-status').textContent=data.status; $('case-context').textContent=data.context;
+    document.querySelectorAll('[data-scenario]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.scenario===state.scenario)));
+    document.querySelectorAll('[data-tab]').forEach(button=>{ const active=button.dataset.tab===state.tab; button.setAttribute('aria-selected',String(active)); button.tabIndex=active?0:-1; });
+    $('case-panel').setAttribute('aria-labelledby','tab-'+state.tab);
+    $('case-panel').innerHTML=({summary:renderSummary,evidence:renderEvidence,action:renderAction,verify:renderVerify}[state.tab])(data);
+    $('case-panel').querySelectorAll('[data-open-tab]').forEach(button=>button.addEventListener('click',()=>setTab(button.dataset.openTab)));
+    $('case-panel').querySelectorAll('[data-evidence]').forEach(button=>button.addEventListener('click',()=>{ const id=button.dataset.evidence; setTab('evidence'); $(id).open=true; $(id).querySelector('summary').focus(); }));
+    if($('demo-checks')) $('demo-checks').addEventListener('click',()=>{ if(state.verified.has(state.scenario)) state.verified.delete(state.scenario); else state.verified.add(state.scenario); renderCase(); $('demo-checks').focus(); announce('已切换虚构验收样例，未执行任何检查。'); });
+  }
+  function setTab(tab) { state.tab=tab; renderCase(); announce('已打开'+$('tab-'+tab).textContent+'，数据为虚构样例。'); }
+  function renderPolicy() {
+    let title,reason,pass=false;
+    if($('policy-mode').value==='observe') { title='仅记录建议，不新增封禁'; reason='观察模式优先，不论检测条件是否命中，都不会创建或扩大 OpsArk 阻断。'; }
+    else if($('policy-expired').checked) { title='拒绝：示例授权已过期'; reason='需要重新评审并取得对应对象、动作和期限的授权。'; }
+    else if(!$('policy-in-scope').checked) { title='拒绝：目标不在授权范围'; reason='不能将一台主机或一个端口的授权扩大到其他对象。'; }
+    else if(!$('policy-trusted').checked) { title='拒绝：来源尚不可信'; reason='先验证真实来源与代理路径，不能直接使用任意请求头中的地址。'; }
+    else if($('policy-management').checked) { title='拒绝：命中受保护管理地址'; reason='保留管理路径，交付调查结果并转人工处理。'; }
+    else { title='模拟判定：可进入受限执行队列'; reason='仅表示示例条件满足；真实执行仍需本地校验数量上限、冲突任务、生效路径与撤销能力。原型不执行。'; pass=true; }
+    $('policy-result').classList.toggle('pass',pass); $('policy-result').innerHTML='<strong>'+esc(title)+'</strong><p>'+esc(reason)+'</p>';
+  }
+  document.querySelectorAll('[data-view]').forEach(button=>button.addEventListener('click',()=>showView(button.dataset.view)));
+  document.querySelectorAll('[data-scenario]').forEach(button=>button.addEventListener('click',()=>{state.scenario=button.dataset.scenario;state.tab='summary';renderCase();announce('已切换虚构样例：'+cases[state.scenario].title);}));
+  document.querySelectorAll('[data-tab]').forEach(button=>{
+    button.addEventListener('click',()=>setTab(button.dataset.tab));
+    button.addEventListener('keydown',event=>{ const tabs=[...document.querySelectorAll('[data-tab]')]; let next=tabs.indexOf(button); if(event.key==='ArrowRight') next=(next+1)%tabs.length; else if(event.key==='ArrowLeft') next=(next+tabs.length-1)%tabs.length; else if(event.key==='Home') next=0; else if(event.key==='End') next=tabs.length-1; else return; event.preventDefault();setTab(tabs[next].dataset.tab);tabs[next].focus(); });
+  });
+  $('host-form').addEventListener('input',()=>{state.connection=false;state.connected=false;$('host-next').disabled=true;$('connection-result').hidden=true;$('confirm-dependencies').checked=false;$('dependency-next').disabled=true;$('confirm-observation').checked=false;$('onboard-status').textContent='演示资料待重新确认';});
+  $('simulate-connection').addEventListener('click',()=>{ const form=$('host-form'); if(!form.reportValidity())return; const textFields=[...form.querySelectorAll('input:not([type="number"])')]; if(textFields.some(input=>!input.value.trim())) { $('host-error').textContent='请填写非空的主机信息。';$('host-error').hidden=false;return; } $('host-error').hidden=true;state.connection=true;$('connection-result').hidden=false;$('host-next').disabled=false;announce('演示连接检查完成；未发起网络连接。'); });
+  $('host-form').addEventListener('submit',event=>{event.preventDefault();if(state.connection)showStep(1);});
+  $('confirm-dependencies').addEventListener('change',()=>{$('dependency-next').disabled=!$('confirm-dependencies').checked;});
+  $('dependency-next').addEventListener('click',()=>{if($('confirm-dependencies').checked)showStep(2);});
+  $('back-to-host').addEventListener('click',()=>showStep(0));$('back-to-dependencies').addEventListener('click',()=>showStep(1));
+  $('check-form').addEventListener('submit',event=>{event.preventDefault();if(!$('check-form').reportValidity())return;const url=new URL($('check-url').value);if(!['http:','https:'].includes(url.protocol)){$('check-error').textContent='检查地址须使用 HTTP 或 HTTPS。';$('check-error').hidden=false;return;}if(!$('confirm-dependencies').checked||!state.connection)return;state.health={url:url.href,status:$('expected-status').value,body:$('expected-body').value,window:$('check-window').value};state.verified.delete('web');$('check-error').hidden=true;state.connected=true;$('onboard-status').textContent='演示接入已完成';showView('incidents');state.scenario='web';state.tab='summary';renderCase();announce('演示接入流程完成，未连接主机或启用封禁。');});
+  ['policy-mode','policy-trusted','policy-in-scope','policy-management','policy-expired'].forEach(id=>$(id).addEventListener('change',renderPolicy));
+  $('download-report').addEventListener('click',()=>{const data=cases[state.scenario];const text='# OpsArk 演示事件摘要\n\n虚构演示数据，未采集真实服务器，未执行处置或验收。\n\n事件：'+data.id+'\n对象：'+data.context+'\n状态：'+data.status+'\n\n## 候选判断\n\n'+data.lead+'\n\n'+data.interpretation+'\n\n## 样例事实与证据\n\n'+data.facts.map(f=>'- ['+f[1]+'] '+f[0]).join('\n')+'\n\n## 未解决事项\n\n'+data.missing.map(item=>'- '+item).join('\n')+'\n\n## 建议动作\n\n'+data.action+'\n\n阻止执行的原因：'+data.block+'\n\n## 验收\n\n未执行真实检查，未完成实际业务验收。网页中展示的模拟片段不构成真实结果。\n';const url=URL.createObjectURL(new Blob([text],{type:'text/markdown;charset=utf-8'}));const link=document.createElement('a');link.href=url;link.download=data.id+'-demo.md';document.body.append(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);announce('已生成当前事件的本地演示摘要。');});
+  renderCase();renderPolicy();
+})();
+</script>
+</body>
+</html>
