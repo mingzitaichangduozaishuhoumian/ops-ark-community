@@ -8,6 +8,7 @@ import math
 import os
 import re
 import stat
+import sys
 import threading
 import time
 from collections.abc import Callable
@@ -87,6 +88,9 @@ def _identity(meta: os.stat_result) -> tuple[int, ...]:
 
 def _windows_private(descriptor: int) -> None:
     """Accept file ownership/DACL only for the current user, SYSTEM and Administrators."""
+    if sys.platform != "win32":
+        raise ValueError("Invalid credential security")
+
     import msvcrt
     from ctypes import wintypes
 
