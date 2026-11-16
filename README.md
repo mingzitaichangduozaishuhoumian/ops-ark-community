@@ -1,21 +1,36 @@
 # OpsArk
 
-OpsArk 是面向个人站长和小团队的自部署 VPS 运维工具。它可以只读调查故障、持续观察已登记的主机与站点，也可以在授权范围内执行变更并验证业务恢复。调查报告保留采集时间、证据、候选原因和待核实项，客户交接摘要按实际证据标记验收状态。
+OpsArk 是面向个人站长和小团队的自部署 VPS 运维工具。网站突然返回 502 时，它把 Nginx、上游端口和容器状态汇到一份报告里，让你看到支持判断的证据、可能的原因和还缺哪些检查。处置后可以核对原任务、复验业务，再把验收状态导出为脱敏交接摘要。
 
-一次完整的处理流程是 **接入预检 → 收集证据 → 预览并批准处置 → 核对原任务 → 只读复验 → 导出摘要**。可以从只读调查开始，按实际需要启用后续功能。
+[下载社区试用版](https://github.com/mingzitaichangduozaishuhoumian/ops-ark-community/releases/tag/v0.19.0-community.1) · [本地快速开始](#开始试用) · [看样例报告](docs/REPORT_SAMPLES.md) · [实测服务器规格](#小型-vps-部署规格)
+
+**先在本机用样本体验。** 首次启动使用手动模式，SSH 清单为空。AI 可选，模型只能收到通过白名单校验的结构化摘要。 [权限与数据边界](docs/SECURITY_MODEL.md)
 
 ## 开始试用
 
-**先跑本地合成样本。** 网站 502、磁盘异常和容器反复重启都可以在本机回放。Windows 和 Ubuntu WSL2 已完成首次安装、样本回放和重启读回。试用只需 uv、浏览器和下载依赖的网络，无需 VPS、SSH、Docker 或模型密钥。
+Windows 和 Ubuntu WSL2 已验证首次安装、样本回放和重启读回。网站 502、磁盘异常和容器反复重启都能本地回放，只需要 uv、浏览器和下载依赖的网络。
 
-从发行页下载试用公告标明的源码 ZIP 附件，核对 SHA-256，再解压到新目录。安装 uv，在含 `pyproject.toml` 和 `uv.lock` 的源码根目录打开一个没有 OpsArk 部署变量的新终端。首次同步会下载锁定依赖，也可能下载 Python 3.13。 [试用发行页](https://github.com/mingzitaichangduozaishuhoumian/ops-ark-community/releases) · [uv 安装说明](https://docs.astral.sh/uv/getting-started/installation/)
+下载发行页附件 `ops-ark-community-0.19.0-community.1.zip`，对照 `SHA256SUMS.txt` 核对后解压。安装 uv，在含 `pyproject.toml` 和 `uv.lock` 的源码根目录打开一个没有 OpsArk 部署变量的新终端，运行下面两行。首次同步会下载锁定依赖，也可能下载 Python 3.13。 [发行页](https://github.com/mingzitaichangduozaishuhoumian/ops-ark-community/releases/tag/v0.19.0-community.1) · [uv 安装说明](https://docs.astral.sh/uv/getting-started/installation/)
 
 ```console
 uv sync --locked --no-dev --python 3.13
 uv run --locked --no-dev python -m uvicorn opsark.main:app --app-dir src --host 127.0.0.1 --port 18190 --workers 1
 ```
 
-打开本地控制台，用首次启动生成的 `data/access-token` 解锁。选择「本地样本回放」中的网站 502，点击「运行只读调查」，再下载 `opsark-handoff.md`。样本摘要会显示「待验收」。重启控制台后，可以从「最近报告」重新打开原报告并下载摘要。 [本地控制台](http://127.0.0.1:18190/) · [首次运行与故障排查](docs/COMMUNITY_TRIAL.md)
+打开本地控制台，填入首次启动生成的 `data/access-token` 文件内容。选择「站点上游与容器端口不一致」样本，点击「运行只读调查」。报告会显示「需要关注」，在「证据记录」中可以查看模拟的上游连接失败。点「下载客户交接摘要」，导出的 `opsark-handoff.md` 会标记「待验收」。重启后可以在「最近报告」中找回同一份报告。 [本地控制台](http://127.0.0.1:18190/) · [首次运行与故障排查](docs/COMMUNITY_TRIAL.md)
+
+![OpsArk 502 样本报告，Nginx 请求的 8080 端口连接被拒绝，容器发布的端口是 8081](docs/images/opsark-502-sample.png)
+
+*社区试用版控制台截图，使用内置的 502 合成样本。*
+
+## 小型 VPS 部署规格
+
+| 部署方式 | 实测规格和范围 |
+| --- | --- |
+| **整机部署起步参考** | **1 vCPU / 1 GiB RAM / 无 swap**。Ubuntu 24.04 隔离来宾机同时运行系统、Docker、OpsArk 和轻量 Nginx，完成安全扫描、单包更新、服务激活和业务复验。轻载验收中，整机最低可用内存约 282 MiB。[整机容量验收](docs/CAPACITY_ACCEPTANCE.md) |
+| **独立控制台** | 控制台曾在 **0.25 vCPU / 128 MiB RAM / 无 swap** 的容器限制下完成启动、认证、本地样本回放和摘要导出。该容量测试覆盖单控制台的本地回放。[控制台资源实测](docs/RUNNING.md#资源占用与小型-vps) |
+
+整机的 1 GiB 数据适用于上述轻载场景。512 MiB 整机、数据库与多目标并发尚无容量验收；实际部署按业务、日志和备份用量预留资源。
 
 ## 调查与接入
 
